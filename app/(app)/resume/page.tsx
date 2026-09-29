@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import { ResumeWizard } from "@/components/resume/ResumeWizard";
 import { ResumeProvider } from "@/context/ResumeContext";
 import { requireUserId } from "@/lib/session";
-import { computeResumeCompletion, resumeService } from "@/services/resume.service";
+import {
+  computeResumeCompletion,
+  resumeService,
+} from "@/services/resume.service";
 
 export const metadata: Metadata = { title: "Resume builder" };
 
@@ -13,6 +16,7 @@ export default async function ResumePage() {
 
   return (
     <div>
+      <h1>hi</h1>
       <h1 className="page-title">Resume builder</h1>
       <p className="text-muted mb-4">
         {exists

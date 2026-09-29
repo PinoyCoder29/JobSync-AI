@@ -151,12 +151,13 @@ async function seedCamille() {
   const resume = await prisma.resume.create({
     data: {
       userId, fullName: "Camille Reyes", email: "camille.reyes@jobsync.dev", phone: "+63 917 555 0142", location: "Quezon City, Metro Manila",
-      headline: "Junior Full Stack Developer",
+      headline: "Junior Full Stack Developer", hasExperience: true, lastStep: "preview",
+      githubUrl: "github.com/camille-reyes-dev", linkedinUrl: "linkedin.com/in/camille-reyes-dev", portfolioUrl: "camille-reyes.example.dev",
       summary: "Information technology graduate with a year of freelance and internship experience building responsive web apps with React, Next.js and PostgreSQL. Reduced page load time by 35% on a client storefront and shipped 4 production sites.",
       experiences: { create: [
         { company: "Self-employed", role: "Freelance Web Developer", location: "Remote", startDate: "2024-01", endDate: "", sortOrder: 0,
           description: "Built and launched 4 client websites using React, Next.js and Bootstrap.\nReduced page load time by 35% for an online store by optimising images and code splitting.\nDesigned PostgreSQL schemas and REST APIs for a booking app used by 120 customers." },
-        { company: "Silangan Web Studio", role: "Frontend Intern", location: "Makati", startDate: "2023-06", endDate: "2023-09", sortOrder: 1,
+        { kind: "INTERNSHIP", company: "Silangan Web Studio", role: "Frontend Intern", department: "Web Development", location: "Makati", startDate: "2023-06", endDate: "2023-09", sortOrder: 1,
           description: "Converted 12 Figma pages into responsive HTML, CSS and JavaScript.\nFixed 30+ UI bugs and wrote reusable Bootstrap components." },
       ] },
       education: { create: [{ school: "Metro Manila Institute of Technology", degree: "Bachelor of Science", field: "Information Technology", startDate: "2020", endDate: "2024", sortOrder: 0, description: "Capstone: online queueing system for a barangay health center." }] },
@@ -165,11 +166,17 @@ async function seedCamille() {
         { name: "Budget Buddy", url: "", technologies: "React, Node.js", sortOrder: 1, description: "Personal finance tracker with monthly charts and CSV export." },
       ] },
       certifications: { create: [{ name: "Responsive Web Design", issuer: "freeCodeCamp", issuedDate: "2022-11", url: "", sortOrder: 0 }] },
+      trainings: { create: [{ name: "Full Stack Web Development Bootcamp", provider: "Community coding group", date: "2023", description: "12-week hands-on program covering React, Node.js and SQL.", sortOrder: 0 }] },
     },
   });
-  for (const [i, name] of ["React", "Next.js", "TypeScript", "JavaScript", "PostgreSQL", "HTML", "CSS", "Bootstrap", "Git", "REST API"].entries()) {
+  const resumeSkills: [string, string][] = [
+    ["React", "Frontend Development"], ["Next.js", "Frontend Development"], ["TypeScript", "Programming Languages"], ["JavaScript", "Programming Languages"],
+    ["PostgreSQL", "Databases & ORM"], ["HTML", "Frontend Development"], ["CSS", "Frontend Development"], ["Bootstrap", "Frontend Development"],
+    ["Git", "Tools & Development"], ["REST API", "Web Development"],
+  ];
+  for (const [i, [name, category]] of resumeSkills.entries()) {
     const s = await skill(name);
-    await prisma.resumeSkill.create({ data: { resumeId: resume.id, skillId: s.id, sortOrder: i } });
+    await prisma.resumeSkill.create({ data: { resumeId: resume.id, skillId: s.id, category, sortOrder: i } });
   }
 
   const jobByKey = async (key: string) => prisma.job.findFirstOrThrow({ where: { source: "seed", externalId: key } });
@@ -235,14 +242,14 @@ async function seedCamille() {
   // Analyses (deterministic demo provider)
   await prisma.resumeAnalysis.deleteMany({ where: { userId } });
   await prisma.aTSAnalysis.deleteMany({ where: { userId } });
-  const full = await prisma.resume.findUniqueOrThrow({ where: { userId }, include: { experiences: true, education: true, projects: true, certifications: true, skills: { include: { skill: true } } } });
+  const full = await prisma.resume.findUniqueOrThrow({ where: { userId }, include: { experiences: true, education: true, projects: true, certifications: true, trainings: true, skills: { include: { skill: true } } } });
   const snapshot = {
     fullName: full.fullName, email: full.email, phone: full.phone, location: full.location, headline: full.headline, summary: full.summary,
     skills: full.skills.map((s) => s.skill.name),
     experiences: full.experiences.map((e) => ({ role: e.role, company: e.company, description: e.description, startDate: e.startDate, endDate: e.endDate })),
     education: full.education.map((e) => ({ school: e.school, degree: e.degree })),
     projects: full.projects.map((p) => ({ name: p.name, description: p.description, technologies: p.technologies })),
-    certifications: full.certifications.map((c) => ({ name: c.name })),
+    certifications: [...full.certifications.map((c) => ({ name: c.name })), ...full.trainings.map((t) => ({ name: t.name }))],
   };
   const ra = await ai.analyzeResume(snapshot);
   await prisma.resumeAnalysis.create({ data: { userId, resumeId: resume.id, score: ra.score, sections: ra.sections, strengths: ra.strengths, weaknesses: ra.weaknesses, suggestions: ra.suggestions, keywordsFound: ra.keywordsFound, keywordsSuggested: ra.keywordsSuggested, provider: ai.name, isDemo: true } });

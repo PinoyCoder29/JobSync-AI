@@ -29,6 +29,13 @@ Open http://localhost:3000
 | camille.reyes@jobsync.dev | Full demo data (resume, applications, saved jobs, interviews, analyses) |
 | marco.santos@jobsync.dev | Second user to test that data is isolated between accounts |
 
+## Resume builder
+
+`/resume` is a step-by-step wizard: Personal Info -> Experience (yes/no) -> Work History -> Internship -> Education -> Skills -> Projects -> Certifications & Training -> Preview & Download PDF.
+Each **Continue** validates the step on the server (Zod) and saves it to PostgreSQL through Prisma (`resume.service` -> `resume.repository`, one transaction per step).
+The wizard remembers your last step (`Resume.lastStep`). The PDF is a real text-based, single-column, ATS-friendly document made in the browser with `@react-pdf/renderer`.
+"Create New Resume" deletes the resume and all its sections (cascade).
+
 ## Checks
 
 ```bash

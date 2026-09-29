@@ -1,26 +1,35 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { fieldErrors } from "@/lib/action-utils";
 import { toUserMessage } from "@/lib/errors";
 import { requireUserId } from "@/lib/session";
-import { resumeSchema } from "@/lib/validations/resume";
 import { resumeService } from "@/services/resume.service";
 import type { ActionState } from "@/types";
 
-export async function saveResumeAction(data: unknown): Promise<ActionState> {
+/** Persists one wizard step. `nextStep` is remembered so the user can resume where they stopped. */
+export async function saveResumeStepAction(step: string, payload: unknown, nextStep: string | null): Promise<ActionState> {
   const userId = await requireUserId();
-  const parsed = resumeSchema.safeParse(data);
-  if (!parsed.success) {
-    const state = fieldErrors(parsed.error);
-    const first = parsed.error.issues[0];
-    return { ...state, message: `${first.path.join(" › ")}: ${first.message}` };
-  }
   try {
-    await resumeService.save(userId, parsed.data);
+    await resumeService.saveStep(userId, step, payload, nextStep);
+    revalidatePath("/dashboard");
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, message: toUserMessage(error) };
+  }
+}
+
+export async function saveResumeProgressAction(step: string): Promise<void> {
+  const userId = await requireUserId();
+  await resumeService.setLastStep(userId, step).catch((e) => console.error(e));
+}
+
+export async function deleteResumeAction(): Promise<ActionState> {
+  const userId = await requireUserId();
+  try {
+    await resumeService.remove(userId);
     revalidatePath("/resume");
     revalidatePath("/dashboard");
-    return { ok: true, message: "Resume saved." };
+    return { ok: true };
   } catch (error) {
     return { ok: false, message: toUserMessage(error) };
   }

@@ -174,21 +174,6 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .timeline li { position: relative; }
 .timeline li::before { content: ""; position: absolute; left: -23px; top: 6px; width: 10px; height: 10px; border-radius: 50%; background: var(--brand); border: 2px solid var(--bg); }
 
-/* resume */
-.editor-section { margin-bottom: 24px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
-.editor-item { background: var(--peach-2); border: 1px solid var(--line); border-radius: 8px; padding: 12px; margin-bottom: 12px; }
-.preview-sticky { position: sticky; top: 84px; }
-.resume-paper { background: #fff; color: #222; border: 1px solid var(--line); border-radius: 4px; padding: 32px 36px; box-shadow: 0 6px 24px rgba(42, 35, 32, 0.08); font-size: 0.92rem; }
-.resume-name { font-family: var(--font-display); font-size: 1.8rem; font-weight: 800; margin: 0; }
-.resume-headline { font-weight: 600; color: var(--brand-dark); margin: 2px 0; }
-.resume-contact { color: #555; margin-bottom: 14px; font-size: 0.85rem; overflow-wrap: anywhere; }
-.resume-paper section { margin-top: 14px; }
-.resume-paper h3 { font-family: var(--font-display); font-size: 0.95rem; font-weight: 700; border-bottom: 2px solid var(--peach); padding-bottom: 3px; margin-bottom: 8px; }
-.resume-item { margin-bottom: 10px; }
-.resume-date, .resume-sub { color: #666; font-size: 0.85rem; }
-.resume-desc { white-space: pre-line; margin: 3px 0 0; }
-@media (max-width: 575.98px) { .resume-paper { padding: 20px 16px; } }
-
 /* skills / interview */
 .skill-levels { list-style: none; padding: 0; margin: 0; }
 .skill-levels li { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
@@ -215,3 +200,46 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .feature i { font-size: 1.6rem; color: var(--brand); }
 .auth-page { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px 16px; }
 .auth-card { width: 100%; max-width: 420px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 28px; }
+
+/* ───────── Resume wizard (ported from ResumeForge PH) ───────── */
+.wizard { --w-ink: var(--ink); --w-soft: #4a423d; --w-good: var(--good); }
+.wizard .form-label { font-size: 0.85rem; font-weight: 600; color: var(--w-soft); }
+.wizard .form-control, .wizard .form-select { border-color: var(--line); padding: 0.55rem 0.75rem; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 2rem; }
+.panel-title { font-family: var(--font-display); font-weight: 650; font-size: 1.4rem; letter-spacing: -0.01em; margin-bottom: 0.35rem; }
+.panel-subtitle { color: var(--muted); font-size: 0.95rem; margin-bottom: 1.75rem; }
+@media (max-width: 767.98px) { .panel { padding: 1.25rem; } }
+
+.step-rail { list-style: none; margin: 0; padding: 0 0 4px; display: flex; align-items: center; overflow-x: auto; }
+.step-rail-item { display: flex; align-items: center; flex: 0 0 auto; }
+.step-node { width: 30px; height: 30px; border-radius: 50%; border: 1.5px solid var(--line); display: inline-flex; align-items: center; justify-content: center; font-size: 0.78rem; font-weight: 700; color: var(--w-soft); background: var(--surface); flex-shrink: 0; }
+.step-node.is-done { background: var(--good); border-color: var(--good); color: #fff; }
+.step-node.is-current { border-color: var(--brand); background: var(--brand); color: #fff; }
+.step-label { font-size: 0.82rem; color: var(--muted); white-space: nowrap; }
+.step-label.is-current { color: var(--ink); font-weight: 700; }
+.step-connector { width: 26px; height: 1.5px; background: var(--line); margin: 0 0.4rem; flex-shrink: 0; }
+
+.choice-card { border: 1.5px solid var(--line); border-radius: 12px; padding: 1.4rem; cursor: pointer; background: var(--surface); height: 100%; }
+.choice-card:hover { border-color: var(--orange); }
+.choice-card.is-selected { border-color: var(--brand); background: var(--peach-2); }
+.choice-card .choice-title { font-weight: 700; margin-bottom: 0.3rem; }
+.choice-card .choice-desc { font-size: 0.9rem; color: var(--muted); }
+.entry-row { border: 1px solid var(--line); border-radius: 10px; padding: 1rem 1.25rem; background: var(--peach-2); }
+.entry-row + .entry-row { margin-top: 0.75rem; }
+
+.btn-ink { background: var(--brand); border: 1px solid var(--brand); color: #fff; }
+.btn-ink:hover, .btn-ink:focus { background: var(--brand-dark); border-color: var(--brand-dark); color: #fff; }
+.btn-ink:disabled { background: var(--brand); border-color: var(--brand); color: #fff; opacity: 0.6; }
+.btn-outline-ink { border: 1px solid var(--ink); color: var(--ink); background: transparent; }
+.btn-outline-ink:hover { background: var(--ink); color: #fff; }
+
+/* On-screen mirror of the ATS PDF: single column, plain font, real headings */
+.resume-preview { background: #fff; border: 1px solid var(--line); padding: 2.5rem; font-family: "Helvetica Neue", Arial, sans-serif; color: #1a1a1a; min-height: 900px; max-width: 860px; margin: 0 auto; }
+.resume-preview h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.15rem; }
+.resume-preview .resume-title { font-size: 0.95rem; color: #444; margin-bottom: 0.5rem; }
+.resume-preview .resume-contact { font-size: 0.8rem; color: #444; margin-bottom: 1.25rem; overflow-wrap: anywhere; }
+.resume-preview .resume-section-title { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1.5px solid #1a1a1a; padding-bottom: 0.2rem; margin: 1.25rem 0 0.6rem; }
+.resume-preview .resume-entry-title { font-size: 0.88rem; font-weight: 700; }
+.resume-preview .resume-entry-sub { font-size: 0.82rem; color: #444; margin-bottom: 0.3rem; }
+.resume-preview ul { font-size: 0.82rem; padding-left: 1.1rem; margin-bottom: 0.6rem; }
+@media (max-width: 767.98px) { .resume-preview { padding: 1.25rem; } }

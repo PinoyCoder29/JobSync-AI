@@ -5,6 +5,7 @@ generator client {
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 enum WorkArrangement {
@@ -35,6 +36,11 @@ enum ApplicationStatus {
   OFFER
   REJECTED
   WITHDRAWN
+}
+
+enum ExperienceKind {
+  WORK
+  INTERNSHIP
 }
 
 enum InterviewCategory {
@@ -173,12 +179,18 @@ model Resume {
   email          String
   phone          String                @default("")
   location       String                @default("")
-  headline       String                @default("")
+  headline       String                @default("") // job title shown under the name
+  githubUrl      String                @default("")
+  linkedinUrl    String                @default("")
+  portfolioUrl   String                @default("")
   summary        String                @default("") @db.Text
+  hasExperience  Boolean? // null = not answered yet, false = fresh graduate path
+  lastStep       String? // wizard progress, so the user resumes where they stopped
   createdAt      DateTime              @default(now())
   updatedAt      DateTime              @updatedAt
   user           User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   experiences    ResumeExperience[]
+  trainings      ResumeTraining[]
   education      ResumeEducation[]
   projects       ResumeProject[]
   certifications ResumeCertification[]
@@ -190,8 +202,10 @@ model Resume {
 model ResumeExperience {
   id          String @id @default(cuid())
   resumeId    String
+  kind        ExperienceKind @default(WORK)
   company     String
   role        String
+  department  String @default("")
   location    String @default("")
   startDate   String // "YYYY-MM"
   endDate     String @default("") // empty = present
@@ -199,7 +213,7 @@ model ResumeExperience {
   sortOrder   Int    @default(0)
   resume      Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
 
-  @@index([resumeId])
+  @@index([resumeId, kind])
 }
 
 model ResumeEducation {
@@ -208,6 +222,8 @@ model ResumeEducation {
   school      String
   degree      String
   field       String @default("")
+  location    String @default("")
+  honors      String @default("")
   startDate   String @default("")
   endDate     String @default("")
   description String @default("") @db.Text
@@ -221,6 +237,9 @@ model ResumeProject {
   id           String @id @default(cuid())
   resumeId     String
   name         String
+  role         String @default("")
+  organization String @default("")
+  date         String @default("")
   url          String @default("")
   description  String @default("") @db.Text
   technologies String @default("")
@@ -235,10 +254,25 @@ model ResumeCertification {
   resumeId   String
   name       String
   issuer     String @default("")
-  issuedDate String @default("")
+  issuedDate     String @default("")
+  expirationDate String @default("")
+  credentialId   String @default("")
   url        String @default("")
   sortOrder  Int    @default(0)
   resume     Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+
+  @@index([resumeId])
+}
+
+model ResumeTraining {
+  id          String @id @default(cuid())
+  resumeId    String
+  name        String
+  provider    String @default("")
+  date        String @default("")
+  description String @default("") @db.Text
+  sortOrder   Int    @default(0)
+  resume      Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
 
   @@index([resumeId])
 }
@@ -247,6 +281,7 @@ model ResumeSkill {
   id        String @id @default(cuid())
   resumeId  String
   skillId   String
+  category  String @default("Other")
   sortOrder Int    @default(0)
   resume    Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
   skill     Skill  @relation(fields: [skillId], references: [id], onDelete: Cascade)

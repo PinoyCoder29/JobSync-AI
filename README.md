@@ -29,6 +29,19 @@ Open http://localhost:3000
 | camille.reyes@jobsync.dev | Full demo data (resume, applications, saved jobs, interviews, analyses) |
 | marco.santos@jobsync.dev | Second user to test that data is isolated between accounts |
 
+## Sign in with Google, GitHub and Facebook
+
+Buttons on `/login` and `/register` appear only for providers whose keys are in `.env`. Restart `npm run dev` after editing `.env`.
+Use this redirect URI (callback URL) for each provider: `http://localhost:3000/api/auth/callback/<google|github|facebook>`.
+
+- **Google:** console.cloud.google.com -> APIs & Services -> Credentials -> Create OAuth client ID (Web application) -> add the redirect URI.
+  You may need to set up the OAuth consent screen first. Put the values in `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`.
+- **GitHub:** github.com/settings/developers -> New OAuth App -> Authorization callback URL = the redirect URI. Use `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET`.
+- **Facebook:** developers.facebook.com -> Create App -> add "Facebook Login" -> Valid OAuth Redirect URIs = the redirect URI.
+  App ID and App Secret go in `AUTH_FACEBOOK_ID` / `AUTH_FACEBOOK_SECRET`. While the app is in Development mode only you and added testers can log in; switch it to Live for everyone.
+
+Behaviour to know: social users are stored in the same `User`/`Account` tables and get a Profile automatically. If someone signs up with email + password and later clicks Google with the SAME email, Auth.js blocks it (`OAuthAccountNotLinked`) on purpose, to prevent account takeover through a provider that doesn't verify emails. Facebook accounts that don't share an email cannot sign up, because our User table needs one.
+
 ## Resume builder
 
 `/resume` is a step-by-step wizard: Personal Info -> Experience (yes/no) -> Work History -> Internship -> Education -> Skills -> Projects -> Certifications & Training -> Preview & Download PDF.

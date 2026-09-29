@@ -27,6 +27,12 @@ export const userService = {
     await userRepository.updatePassword(userId, await bcrypt.hash(newPassword, ROUNDS));
   },
 
+  /** How this user can sign in: password, and/or which social accounts are linked. */
+  async getSignInMethods(userId: string) {
+    const [user, accounts] = await Promise.all([userRepository.findByIdWithHash(userId), userRepository.listAccounts(userId)]);
+    return { hasPassword: Boolean(user?.passwordHash), providers: accounts.map((a) => a.provider) };
+  },
+
   getAccount(userId: string) {
     return userRepository.findById(userId);
   },

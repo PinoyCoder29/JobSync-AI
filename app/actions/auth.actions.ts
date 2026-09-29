@@ -4,6 +4,8 @@ import { AuthError } from "next-auth";
 import { signIn, signOut } from "@/auth";
 import { fieldErrors, safeRedirectPath } from "@/lib/action-utils";
 import { toUserMessage } from "@/lib/errors";
+import { isEnabledOAuthProvider } from "@/lib/oauth-providers";
+import { redirect } from "next/navigation";
 import { loginSchema, registerSchema } from "@/lib/validations/auth";
 import { userService } from "@/services/user.service";
 import type { ActionState } from "@/types";
@@ -36,4 +38,11 @@ export async function registerAction(_prev: ActionState, formData: FormData): Pr
 
 export async function logoutAction() {
   await signOut({ redirectTo: "/" });
+}
+
+/** One-click sign in / sign up with Google, GitHub or Facebook. The provider is checked against what is really configured. */
+export async function oauthSignInAction(formData: FormData): Promise<void> {
+  const provider = formData.get("provider");
+  if (!isEnabledOAuthProvider(provider)) redirect("/login?error=Configuration");
+  await signIn(provider, { redirectTo: safeRedirectPath(formData.get("callbackUrl")) });
 }

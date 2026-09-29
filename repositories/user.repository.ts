@@ -17,6 +17,12 @@ export const userRepository = {
       select: { id: true, name: true, email: true },
     });
   },
+  ensureProfile(userId: string) {
+    return prisma.profile.upsert({ where: { userId }, create: { userId }, update: {}, select: { id: true } });
+  },
+  listAccounts(userId: string) {
+    return prisma.account.findMany({ where: { userId }, select: { provider: true }, orderBy: { provider: "asc" } });
+  },
   updatePassword(id: string, passwordHash: string) {
     return prisma.user.update({ where: { id }, data: { passwordHash }, select: { id: true } });
   },

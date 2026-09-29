@@ -4,12 +4,14 @@ import { formatDate } from "@/lib/labels";
 import { requireUserId } from "@/lib/session";
 import { profileService } from "@/services/profile.service";
 import { userService } from "@/services/user.service";
+import { OAUTH_PROVIDERS } from "@/lib/oauth-providers";
 
 export const metadata: Metadata = { title: "Settings" };
 
 export default async function SettingsPage() {
   const userId = await requireUserId();
-  const [account, { profile }] = await Promise.all([userService.getAccount(userId), profileService.get(userId)]);
+  const [account, { profile }, methods] = await Promise.all([userService.getAccount(userId), profileService.get(userId), userService.getSignInMethods(userId)]);
+  const labelOf = (id: string) => OAUTH_PROVIDERS.find((p) => p.id === id)?.label ?? id;
   return (
     <div className="d-grid gap-5" style={{ maxWidth: 720 }}>
       <div>
@@ -22,6 +24,7 @@ export default async function SettingsPage() {
           <div><dt>Name</dt><dd>{account?.name}</dd></div>
           <div><dt>Email</dt><dd>{account?.email}</dd></div>
           <div><dt>Member since</dt><dd>{account ? formatDate(account.createdAt) : ""}</dd></div>
+          <div><dt>Sign-in</dt><dd>{[methods.hasPassword ? "Email and password" : null, ...methods.providers.map(labelOf)].filter(Boolean).join(", ") || "Email and password"}</dd></div>
         </dl>
         <p className="small text-muted">Change your name on the profile page.</p>
       </section>
@@ -37,7 +40,11 @@ export default async function SettingsPage() {
       </section>
       <section>
         <h2 className="section-title">Password</h2>
-        <PasswordForm />
+        {methods.hasPassword ? (
+          <PasswordForm />
+        ) : (
+          <p className="text-muted mb-0">You sign in with {methods.providers.map(labelOf).join(", ")}, so there is no JobSync AI password to change. Manage your password with that provider.</p>
+        )}
       </section>
     </div>
   );

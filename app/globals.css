@@ -243,3 +243,10 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .resume-preview .resume-entry-sub { font-size: 0.82rem; color: #444; margin-bottom: 0.3rem; }
 .resume-preview ul { font-size: 0.82rem; padding-left: 1.1rem; margin-bottom: 0.6rem; }
 @media (max-width: 767.98px) { .resume-preview { padding: 1.25rem; } }
+
+/* social sign-in */
+.oauth-btn { display: inline-flex; align-items: center; justify-content: center; font-weight: 600; background: #fff; color: var(--ink); border-color: var(--line); padding: 0.6rem 1rem; }
+.oauth-btn:hover { background: var(--peach-2); color: var(--ink); border-color: var(--orange); }
+.oauth-btn .bi-google { color: #db4437; } .oauth-btn .bi-github { color: #24292f; } .oauth-btn .bi-facebook { color: #1877f2; }
+.divider-text { display: flex; align-items: center; gap: 12px; margin: 18px 0 4px; color: var(--muted); font-size: 0.85rem; }
+.divider-text::before, .divider-text::after { content: ""; flex: 1; height: 1px; background: var(--line); }

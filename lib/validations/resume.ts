@@ -1,17 +1,39 @@
 import { z } from "zod";
 
 const text = (max: number) => z.string().trim().max(max).default("");
-const required = (max: number, msg: string) => z.string().trim().min(1, msg).max(max);
+
+const required = (max: number, msg: string) =>
+  z.string().trim().min(1, msg).max(max);
+
 const link = z.string().trim().max(200).default("");
 
+/* =========================================================
+   WIZARD
+========================================================= */
+
 export const WIZARD_STEPS = [
-  "personal-info", "experience-question", "experience-entries", "internship",
-  "education", "skills", "projects", "certifications", "preview",
+  "personal-info",
+  "experience-question",
+  "experience-entries",
+  "internship",
+  "education",
+  "skills",
+  "projects",
+  "certifications",
+  "preview",
 ] as const;
+
 export type WizardStepName = (typeof WIZARD_STEPS)[number];
 
+/* =========================================================
+   WIZARD SCHEMAS
+========================================================= */
+
 export const personalInfoSchema = z.object({
-  fullName: required(100, "Full name is required").min(2, "Full name is required"),
+  fullName: required(100, "Full name is required").min(
+    2,
+    "Full name is required",
+  ),
   jobTitle: text(120),
   email: z.string().trim().email("Enter a valid email address"),
   phone: text(40),
@@ -51,7 +73,10 @@ export const educationSchema = z.object({
   summary: text(1500),
 });
 
-export const skillSchema = z.object({ name: required(60, "Skill name is required"), category: text(60) });
+export const skillSchema = z.object({
+  name: required(60, "Skill name is required"),
+  category: text(60),
+});
 
 export const projectSchema = z.object({
   name: required(120, "Project name is required"),
@@ -79,18 +104,100 @@ export const trainingSchema = z.object({
   description: text(1500),
 });
 
-/** What the client is allowed to send for each wizard step. Everything is re-validated on the server. */
+/* =========================================================
+   WIZARD STEP PAYLOADS
+========================================================= */
+
 export const stepPayloadSchemas = {
   "personal-info": personalInfoSchema,
+
   "experience-question": z.enum(["yes", "no"]).nullable(),
+
   "experience-entries": z.array(experienceSchema).max(15),
+
   internship: z.array(internshipSchema).max(15),
+
   education: z.array(educationSchema).max(10),
+
   skills: z.array(skillSchema).max(60),
+
   projects: z.array(projectSchema).max(12),
-  certifications: z.object({ certifications: z.array(certificationSchema).max(15), trainings: z.array(trainingSchema).max(15) }),
+
+  certifications: z.object({
+    certifications: z.array(certificationSchema).max(15),
+    trainings: z.array(trainingSchema).max(15),
+  }),
 } as const;
 
 export type SavableStep = keyof typeof stepPayloadSchemas;
-export const isWizardStep = (v: unknown): v is WizardStepName => typeof v === "string" && (WIZARD_STEPS as readonly string[]).includes(v);
-export const isSavableStep = (v: unknown): v is SavableStep => typeof v === "string" && v in stepPayloadSchemas;
+
+export const isWizardStep = (value: unknown): value is WizardStepName => {
+  return (
+    typeof value === "string" &&
+    (WIZARD_STEPS as readonly string[]).includes(value)
+  );
+};
+
+export const isSavableStep = (value: unknown): value is SavableStep => {
+  return typeof value === "string" && value in stepPayloadSchemas;
+};
+
+/* =========================================================
+   RESUME EDITOR
+   =========================================================
+   This is the data structure used by:
+   components/resume/ResumeEditor.tsx
+========================================================= */
+
+export const resumeInputSchema = z.object({
+  fullName: z.string().default(""),
+  email: z.string().default(""),
+  phone: z.string().default(""),
+  location: z.string().default(""),
+  headline: z.string().default(""),
+  summary: z.string().default(""),
+
+  experiences: z.array(
+    z.object({
+      company: z.string().default(""),
+      role: z.string().default(""),
+      location: z.string().default(""),
+      startDate: z.string().default(""),
+      endDate: z.string().default(""),
+      description: z.string().default(""),
+    }),
+  ),
+
+  education: z.array(
+    z.object({
+      school: z.string().default(""),
+      degree: z.string().default(""),
+      field: z.string().default(""),
+      startDate: z.string().default(""),
+      endDate: z.string().default(""),
+      description: z.string().default(""),
+    }),
+  ),
+
+  skills: z.array(z.string().default("")),
+
+  projects: z.array(
+    z.object({
+      name: z.string().default(""),
+      url: z.string().default(""),
+      description: z.string().default(""),
+      technologies: z.string().default(""),
+    }),
+  ),
+
+  certifications: z.array(
+    z.object({
+      name: z.string().default(""),
+      issuer: z.string().default(""),
+      issuedDate: z.string().default(""),
+      url: z.string().default(""),
+    }),
+  ),
+});
+
+export type ResumeInput = z.infer<typeof resumeInputSchema>;

@@ -1,0 +1,50 @@
+"use client";
+
+import { useActionState } from "react";
+import { changePasswordAction, updateSettingsAction } from "@/app/actions/profile.actions";
+import { Field } from "@/components/ui/Field";
+import { FormMessage } from "@/components/ui/FormMessage";
+import { SubmitButton } from "@/components/ui/SubmitButton";
+
+type Prefs = { notifyApplicationUpdates: boolean; notifyJobAlerts: boolean; notifyProductNews: boolean; profileVisible: boolean };
+
+function Switch({ name, label, hint, checked }: { name: string; label: string; hint: string; checked: boolean }) {
+  return (
+    <div className="form-check form-switch mb-3">
+      <input className="form-check-input" type="checkbox" role="switch" id={name} name={name} defaultChecked={checked} />
+      <label className="form-check-label fw-semibold" htmlFor={name}>{label}</label>
+      <div className="form-text mt-0">{hint}</div>
+    </div>
+  );
+}
+
+export function PreferencesForm({ prefs }: { prefs: Prefs }) {
+  const [state, action] = useActionState(updateSettingsAction, {});
+  return (
+    <form action={action}>
+      <Switch name="notifyApplicationUpdates" label="Application updates" hint="Status changes on your tracked applications." checked={prefs.notifyApplicationUpdates} />
+      <Switch name="notifyJobAlerts" label="Job alerts" hint="New jobs that match your profile." checked={prefs.notifyJobAlerts} />
+      <Switch name="notifyProductNews" label="Product news" hint="Occasional updates about JobSync AI." checked={prefs.notifyProductNews} />
+      <Switch name="profileVisible" label="Profile visible to employers" hint="Controls whether employers may find your profile once employer features exist." checked={prefs.profileVisible} />
+      <div className="d-flex flex-wrap align-items-center gap-3">
+        <SubmitButton>Save preferences</SubmitButton>
+        <FormMessage state={state} />
+      </div>
+    </form>
+  );
+}
+
+export function PasswordForm() {
+  const [state, action] = useActionState(changePasswordAction, {});
+  return (
+    <form action={action} noValidate>
+      <Field label="Current password" name="currentPassword" type="password" state={state} autoComplete="current-password" required />
+      <Field label="New password" name="newPassword" type="password" state={state} autoComplete="new-password" required hint="At least 8 characters with a letter and a number." />
+      <Field label="Confirm new password" name="confirmPassword" type="password" state={state} autoComplete="new-password" required />
+      <div className="d-flex flex-wrap align-items-center gap-3">
+        <SubmitButton pendingText="Updating…">Change password</SubmitButton>
+        <FormMessage state={state} />
+      </div>
+    </form>
+  );
+}

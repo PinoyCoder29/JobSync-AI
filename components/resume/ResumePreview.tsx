@@ -64,7 +64,14 @@ export default function ResumePreview({
   };
 
   return (
-    <div>
+    <div
+      style={{
+        width: "100%",
+        overflowX: "auto",
+        backgroundColor: "#f1f1f1",
+        padding: "20px 0",
+      }}
+    >
       {/* Resume */}
       <div
         style={{
@@ -88,32 +95,41 @@ export default function ResumePreview({
             marginBottom: "13px",
           }}
         >
+          {/* Full Name */}
           <h1
             style={{
               margin: 0,
+              padding: 0,
               fontSize: "25px",
               fontWeight: 700,
-              lineHeight: 1.1,
+              lineHeight: 1.25,
+              marginBottom: personalInfo.jobTitle ? "3px" : "0",
             }}
           >
             {personalInfo.fullName || "Your Name"}
           </h1>
 
+          {/* Job Title */}
           {personalInfo.jobTitle && (
             <div
               style={{
-                marginTop: "3px",
+                margin: 0,
+                padding: 0,
                 fontSize: "13px",
                 fontWeight: 600,
+                lineHeight: 1.25,
+                marginBottom: "5px",
               }}
             >
               {personalInfo.jobTitle}
             </div>
           )}
 
+          {/* Contact Information */}
           <div
             style={{
-              marginTop: "6px",
+              margin: 0,
+              padding: 0,
               fontSize: "9px",
               lineHeight: 1.4,
             }}
@@ -167,6 +183,7 @@ export default function ResumePreview({
                 paddingBottom: "3px",
                 borderBottom: "1px solid #777",
                 fontWeight: 700,
+                lineHeight: 1.2,
               }}
             >
               PROFESSIONAL SUMMARY
@@ -195,6 +212,7 @@ export default function ResumePreview({
                 paddingBottom: "3px",
                 borderBottom: "1px solid #777",
                 fontWeight: 700,
+                lineHeight: 1.2,
               }}
             >
               WORK EXPERIENCE
@@ -214,7 +232,12 @@ export default function ResumePreview({
                     gap: "15px",
                   }}
                 >
-                  <div>
+                  <div
+                    style={{
+                      flex: 1,
+                      minWidth: 0,
+                    }}
+                  >
                     <strong>{entry.position}</strong>
 
                     <div
@@ -266,6 +289,7 @@ export default function ResumePreview({
                 paddingBottom: "3px",
                 borderBottom: "1px solid #777",
                 fontWeight: 700,
+                lineHeight: 1.2,
               }}
             >
               INTERNSHIP / OJT
@@ -285,7 +309,12 @@ export default function ResumePreview({
                     gap: "15px",
                   }}
                 >
-                  <div>
+                  <div
+                    style={{
+                      flex: 1,
+                      minWidth: 0,
+                    }}
+                  >
                     <strong>{entry.position}</strong>
 
                     <div
@@ -341,6 +370,7 @@ export default function ResumePreview({
                 paddingBottom: "3px",
                 borderBottom: "1px solid #777",
                 fontWeight: 700,
+                lineHeight: 1.2,
               }}
             >
               EDUCATION
@@ -360,7 +390,12 @@ export default function ResumePreview({
                     gap: "15px",
                   }}
                 >
-                  <div>
+                  <div
+                    style={{
+                      flex: 1,
+                      minWidth: 0,
+                    }}
+                  >
                     <strong>{entry.degree}</strong>
 
                     <div
@@ -422,6 +457,7 @@ export default function ResumePreview({
                 paddingBottom: "3px",
                 borderBottom: "1px solid #777",
                 fontWeight: 700,
+                lineHeight: 1.2,
               }}
             >
               SKILLS
@@ -453,6 +489,7 @@ export default function ResumePreview({
                 paddingBottom: "3px",
                 borderBottom: "1px solid #777",
                 fontWeight: 700,
+                lineHeight: 1.2,
               }}
             >
               PROJECTS
@@ -472,7 +509,12 @@ export default function ResumePreview({
                     gap: "15px",
                   }}
                 >
-                  <div>
+                  <div
+                    style={{
+                      flex: 1,
+                      minWidth: 0,
+                    }}
+                  >
                     <strong>{project.name}</strong>
 
                     {project.role && <div>{project.role}</div>}
@@ -528,6 +570,7 @@ export default function ResumePreview({
                   <div
                     style={{
                       fontSize: "8.5px",
+                      wordBreak: "break-all",
                     }}
                   >
                     {project.url}
@@ -548,6 +591,7 @@ export default function ResumePreview({
                 paddingBottom: "3px",
                 borderBottom: "1px solid #777",
                 fontWeight: 700,
+                lineHeight: 1.2,
               }}
             >
               CERTIFICATIONS
@@ -576,6 +620,7 @@ export default function ResumePreview({
                   <div
                     style={{
                       fontSize: "8.5px",
+                      wordBreak: "break-all",
                     }}
                   >
                     {entry.credentialUrl}
@@ -596,6 +641,7 @@ export default function ResumePreview({
                 paddingBottom: "3px",
                 borderBottom: "1px solid #777",
                 fontWeight: 700,
+                lineHeight: 1.2,
               }}
             >
               TRAINING

@@ -4,10 +4,10 @@ import {
   Text,
   View,
   StyleSheet,
-  Link
+  Link,
 } from "@react-pdf/renderer";
 
-import { ResumeData, SkillEntry } from "@/types/resume";
+import type { ResumeData, SkillEntry } from "@/types/resume";
 
 interface ResumePDFDocumentProps {
   data: ResumeData;
@@ -25,29 +25,39 @@ const styles = StyleSheet.create({
     color: "#111111",
   },
 
+  /* =========================
+     HEADER
+  ========================= */
+
   header: {
     borderBottomWidth: 1.5,
     borderBottomColor: "#111111",
-    paddingBottom: 6,
+    paddingBottom: 7,
     marginBottom: 7,
   },
 
   name: {
     fontFamily: "Helvetica-Bold",
     fontSize: 19,
-    marginBottom: 1,
+    lineHeight: 1.25,
+    marginBottom: 3,
   },
 
   jobTitle: {
     fontFamily: "Helvetica-Bold",
     fontSize: 10,
-    marginBottom: 2,
+    lineHeight: 1.25,
+    marginBottom: 4,
   },
 
   contact: {
     fontSize: 7.5,
-    lineHeight: 1.2,
+    lineHeight: 1.3,
   },
+
+  /* =========================
+     SECTIONS
+  ========================= */
 
   section: {
     marginBottom: 5,
@@ -56,6 +66,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontFamily: "Helvetica-Bold",
     fontSize: 9.5,
+    lineHeight: 1.2,
     borderBottomWidth: 0.6,
     borderBottomColor: "#777777",
     paddingBottom: 2,
@@ -66,6 +77,10 @@ const styles = StyleSheet.create({
     fontSize: 8.3,
     lineHeight: 1.2,
   },
+
+  /* =========================
+     ENTRIES
+  ========================= */
 
   entry: {
     marginBottom: 4,
@@ -85,25 +100,32 @@ const styles = StyleSheet.create({
   entryTitle: {
     fontFamily: "Helvetica-Bold",
     fontSize: 8.5,
+    lineHeight: 1.2,
   },
 
   entrySubtitle: {
     fontFamily: "Helvetica-Bold",
-    marginTop: 0,
+    marginTop: 1,
     fontSize: 8,
+    lineHeight: 1.2,
   },
 
   entryMeta: {
     fontSize: 7.3,
+    lineHeight: 1.2,
     textAlign: "right",
     maxWidth: 135,
   },
 
   entryDescription: {
-    marginTop: 1,
+    marginTop: 2,
     fontSize: 8,
     lineHeight: 1.2,
   },
+
+  /* =========================
+     SKILLS
+  ========================= */
 
   skillLine: {
     marginBottom: 1,
@@ -115,15 +137,28 @@ const styles = StyleSheet.create({
     fontFamily: "Helvetica-Bold",
   },
 
+  /* =========================
+     PROJECTS
+  ========================= */
+
   technologies: {
     fontFamily: "Helvetica-Bold",
   },
+
+  /* =========================
+     LINKS
+  ========================= */
 
   link: {
     color: "#111111",
     textDecoration: "none",
     fontSize: 7.5,
+    lineHeight: 1.2,
   },
+
+  /* =========================
+     SMALL TEXT
+  ========================= */
 
   smallText: {
     fontSize: 7.8,
@@ -132,7 +167,8 @@ const styles = StyleSheet.create({
 });
 
 export default function ResumePDFDocument({ data }: ResumePDFDocumentProps) {
-  const personalInfo = data.personalInfo || {};
+  const personalInfo = data.personalInfo;
+
   const experience = data.experience || [];
   const internship = data.internship || [];
   const education = data.education || [];
@@ -140,6 +176,10 @@ export default function ResumePDFDocument({ data }: ResumePDFDocumentProps) {
   const projects = data.projects || [];
   const certifications = data.certifications || [];
   const trainings = data.trainings || [];
+
+  /* =========================
+     GROUP SKILLS
+  ========================= */
 
   const skillsByCategory = skills.reduce<Record<string, SkillEntry[]>>(
     (groups, skill) => {
@@ -156,6 +196,10 @@ export default function ResumePDFDocument({ data }: ResumePDFDocumentProps) {
     {},
   );
 
+  /* =========================
+     DATE FORMAT
+  ========================= */
+
   const formatDateRange = (start?: string, end?: string) => {
     if (!start && !end) {
       return "";
@@ -171,15 +215,24 @@ export default function ResumePDFDocument({ data }: ResumePDFDocumentProps) {
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        {/* HEADER */}
+        {/* =================================================
+            HEADER
+        ================================================= */}
+
         <View style={styles.header}>
+          {/* FULL NAME */}
+
           <Text style={styles.name}>
             {personalInfo.fullName || "Your Name"}
           </Text>
 
+          {/* JOB TITLE */}
+
           {personalInfo.jobTitle && (
             <Text style={styles.jobTitle}>{personalInfo.jobTitle}</Text>
           )}
+
+          {/* CONTACT */}
 
           <Text style={styles.contact}>
             {[
@@ -195,7 +248,10 @@ export default function ResumePDFDocument({ data }: ResumePDFDocumentProps) {
           </Text>
         </View>
 
-        {/* PROFESSIONAL SUMMARY */}
+        {/* =================================================
+            PROFESSIONAL SUMMARY
+        ================================================= */}
+
         {personalInfo.summary && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>PROFESSIONAL SUMMARY</Text>
@@ -204,7 +260,10 @@ export default function ResumePDFDocument({ data }: ResumePDFDocumentProps) {
           </View>
         )}
 
-        {/* WORK EXPERIENCE */}
+        {/* =================================================
+            WORK EXPERIENCE
+        ================================================= */}
+
         {experience.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>WORK EXPERIENCE</Text>
@@ -237,7 +296,10 @@ export default function ResumePDFDocument({ data }: ResumePDFDocumentProps) {
           </View>
         )}
 
-        {/* INTERNSHIP / OJT */}
+        {/* =================================================
+            INTERNSHIP / OJT
+        ================================================= */}
+
         {internship.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>INTERNSHIP / OJT</Text>
@@ -276,7 +338,10 @@ export default function ResumePDFDocument({ data }: ResumePDFDocumentProps) {
           </View>
         )}
 
-        {/* EDUCATION */}
+        {/* =================================================
+            EDUCATION
+        ================================================= */}
+
         {education.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>EDUCATION</Text>
@@ -311,7 +376,10 @@ export default function ResumePDFDocument({ data }: ResumePDFDocumentProps) {
           </View>
         )}
 
-        {/* SKILLS */}
+        {/* =================================================
+            SKILLS
+        ================================================= */}
+
         {skills.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>SKILLS</Text>
@@ -331,7 +399,10 @@ export default function ResumePDFDocument({ data }: ResumePDFDocumentProps) {
           </View>
         )}
 
-        {/* PROJECTS */}
+        {/* =================================================
+            PROJECTS
+        ================================================= */}
+
         {projects.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>PROJECTS</Text>
@@ -381,7 +452,10 @@ export default function ResumePDFDocument({ data }: ResumePDFDocumentProps) {
           </View>
         )}
 
-        {/* CERTIFICATIONS */}
+        {/* =================================================
+            CERTIFICATIONS
+        ================================================= */}
+
         {certifications.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>CERTIFICATIONS</Text>
@@ -418,7 +492,10 @@ export default function ResumePDFDocument({ data }: ResumePDFDocumentProps) {
           </View>
         )}
 
-        {/* TRAINING */}
+        {/* =================================================
+            TRAINING
+        ================================================= */}
+
         {trainings.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>TRAINING</Text>

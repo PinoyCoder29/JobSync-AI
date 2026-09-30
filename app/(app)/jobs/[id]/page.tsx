@@ -57,6 +57,7 @@ export default async function JobDetailPage({ params, searchParams }: Props) {
         </div>
         <div className="d-flex flex-wrap gap-2 align-items-start">
           <SaveJobButton jobId={job.id} saved={saved} />
+          {userId && <Link href={`/ats-checker?jobId=${job.id}`} className="btn btn-outline-brand btn-sm">Check my resume for this job</Link>}
           {applicationId ? (
             <Link href="/applications" className="btn btn-soft btn-sm">Tracked – view application</Link>
           ) : (

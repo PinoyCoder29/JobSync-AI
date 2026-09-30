@@ -25,7 +25,7 @@ export default async function DashboardPage() {
     { label: "In interview stage", value: d.interviewApplications, href: "/applications?status=INTERVIEW" },
     { label: "Saved jobs", value: d.savedCount, href: "/saved-jobs" },
     { label: "Profile complete", value: `${d.profileCompletion.percent}%`, href: "/profile" },
-    { label: "Resume score", value: d.resumeScore ?? "–", href: "/analyzer" },
+    { label: "Resume score", value: d.resumeScore ?? "–", href: "/resume-analyzer" },
     { label: "ATS score", value: d.atsScore ?? "–", href: "/ats-checker" },
   ];
 
@@ -94,7 +94,7 @@ export default async function DashboardPage() {
             <h3 className="sub-title mt-4">Resume suggestions <span className="demo-tag">Demo</span></h3>
             {d.resumeSuggestions.length ? (
               <ul className="check-list">{d.resumeSuggestions.map((m) => <li key={m}>{m}</li>)}</ul>
-            ) : <p className="text-muted small">Run the <Link href="/analyzer">resume analyzer</Link> to get suggestions.</p>}
+            ) : <p className="text-muted small">Run the <Link href="/resume-analyzer">resume analyzer</Link> to get suggestions.</p>}
           </div>
         </div>
       </section>

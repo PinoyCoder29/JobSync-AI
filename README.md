@@ -29,6 +29,22 @@ Open http://localhost:3000
 | camille.reyes@jobsync.dev | Full demo data (resume, applications, saved jobs, interviews, analyses) |
 | marco.santos@jobsync.dev | Second user to test that data is isolated between accounts |
 
+## Resume Analyzer and ATS Checker (Google Gemini)
+
+- `/resume-analyzer` answers "how can I improve my resume?" (no job needed). `/ats-checker` answers "how well does my resume match THIS job?".
+- Resume input: your JobSync resume, an uploaded PDF / DOCX / TXT (up to 4 MB), or pasted text. Job input (ATS): a JobSync job, a pasted description, or an uploaded file.
+- Files are read in memory, text is extracted on the server (`unpdf` for PDF, `mammoth` for DOCX) and the file is then thrown away. Only the extracted text is sent to Gemini, and only the analysis result is saved.
+- Add `GEMINI_API_KEY` to `.env` (key from https://aistudio.google.com/apikey). It is only read on the server. `GEMINI_MODEL` defaults to `gemini-2.5-flash`; change it if Google renames or retires that model.
+- Results are saved in the existing `ResumeAnalysis` and `ATSAnalysis` tables (`provider = "gemini"`, `isDemo = false`) with the full report in the `details` JSON column. History is listed on each page.
+- Same text analysed again = the saved result is shown (no new AI call). Use "Analyze again" / "Check again" for a fresh run. There is also a limit of 8 runs per 10 minutes per user.
+- Keyword lists are verified in code against your real resume text, and overall scores are calculated from the category scores, so the numbers are explainable.
+- After pulling these changes run `npm install`, `npx prisma db push` (adds the new analysis columns) and restart `npm run dev`.
+- Not an ATS simulator: it can only flag "potential ATS concerns" from the text it can extract.
+
+## Light / dark mode
+
+The header switcher offers Light, Dark and System. The choice is saved in the browser (`localStorage`) and applied before the page paints, so there is no flash. All colours are CSS variables in `app/globals.css` (`:root` and `:root[data-theme="dark"]`). The resume preview stays white on purpose because it mirrors the printed PDF.
+
 ## Sign in with Google, GitHub and Facebook
 
 Buttons on `/login` and `/register` appear only for providers whose keys are in `.env`. Restart `npm run dev` after editing `.env`.
@@ -74,7 +90,7 @@ page / server action  ->  service  ->  repository  ->  Prisma  ->  PostgreSQL
 - AI: implement `AIProvider` in `services/ai/types.ts` and return it from `getAIProvider()` in `services/ai/index.ts`.
 - Job matching: replace `computeMatch` in `services/job-match.service.ts`.
 
-Until then, analyses, ATS results, interview feedback and match scores are deterministic DEMO logic and are labeled as such in the UI.
+Resume Analyzer and ATS Checker use Google Gemini. Interview feedback and job match scores are still deterministic DEMO logic and are labeled as such in the UI.
 
 ## Notes
 

@@ -10,7 +10,7 @@ import Link from "next/link";
 // @react-pdf/renderer only works in the browser, so it is loaded client-side only.
 const DownloadPdfButton = dynamic(() => import("@/components/resume/DownloadPdfButton"), {
   ssr: false,
-  loading: () => <button type="button" className="btn btn-dark px-4 py-2" disabled>Preparing PDF…</button>,
+  loading: () => <button type="button" className="btn btn-ink px-4 py-2" disabled>Preparing PDF…</button>,
 });
 
 export default function PreviewStep() {
@@ -53,7 +53,7 @@ export default function PreviewStep() {
           <DownloadPdfButton data={data} />
 
           <p className="small text-muted mt-3 mb-0">
-            Your resume is saved to your account. Next: <Link href="/analyzer">run the resume analyzer</Link> or{" "}
+            Your resume is saved to your account. Next: <Link href="/resume-analyzer">run the resume analyzer</Link> or{" "}
             <Link href="/ats-checker">check it against a job</Link>.
           </p>
 
@@ -62,7 +62,7 @@ export default function PreviewStep() {
 
             <button
               type="button"
-              className="btn btn-outline-primary"
+              className="btn btn-outline-brand"
               onClick={handleStartNewResume}
             >
               + Create New Resume

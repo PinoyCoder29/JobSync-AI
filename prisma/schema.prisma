@@ -441,11 +441,17 @@ model ResumeAnalysis {
   keywordsSuggested String[]
   provider          String   @default("mock")
   isDemo            Boolean  @default(true)
+  // Full structured report from the analyzer (sections, grammar, rewrites, ...). Null on old demo rows.
+  details           Json?
+  sourceType        String   @default("builder") // builder | file | text
+  model             String?
+  inputHash         String? // hash of the analysed text: same text = reuse the saved result
   createdAt         DateTime @default(now())
   user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   resume            Resume?  @relation(fields: [resumeId], references: [id], onDelete: SetNull)
 
   @@index([userId, createdAt])
+  @@index([userId, inputHash])
 }
 
 model ATSAnalysis {
@@ -460,12 +466,21 @@ model ATSAnalysis {
   recommendations  String[]
   provider         String   @default("mock")
   isDemo           Boolean  @default(true)
+  // Full structured report (score breakdown, related keywords, experience/education match, resume changes)
+  details          Json?
+  jobTitle         String? // title/company used for this check (works for pasted job descriptions too)
+  jobCompany       String?
+  resumeSource     String   @default("builder") // builder | file | text
+  jobSource        String   @default("job") // job | file | text
+  model            String?
+  inputHash        String? // hash of resume text + job text
   createdAt        DateTime @default(now())
   user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   resume           Resume?  @relation(fields: [resumeId], references: [id], onDelete: SetNull)
   job              Job?     @relation(fields: [jobId], references: [id], onDelete: SetNull)
 
   @@index([userId, createdAt])
+  @@index([userId, inputHash])
 }
 
 model JobMatch {

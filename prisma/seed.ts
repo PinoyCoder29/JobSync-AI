@@ -238,26 +238,6 @@ async function seedCamille() {
   }
   await prisma.interviewSession.create({ data: { userId, category: "BEHAVIORAL", jobRole: "Frontend Developer", difficulty: "EASY", createdAt: daysAgo(1),
     questions: { create: QUESTION_BANK.BEHAVIORAL.slice(0, 3).map((q, i) => ({ text: q.text, hint: q.hint, expectedKeywords: q.expectedKeywords, sortOrder: i })) } } });
-
-  // Analyses (deterministic demo provider)
-  await prisma.resumeAnalysis.deleteMany({ where: { userId } });
-  await prisma.aTSAnalysis.deleteMany({ where: { userId } });
-  const full = await prisma.resume.findUniqueOrThrow({ where: { userId }, include: { experiences: true, education: true, projects: true, certifications: true, trainings: true, skills: { include: { skill: true } } } });
-  const snapshot = {
-    fullName: full.fullName, email: full.email, phone: full.phone, location: full.location, headline: full.headline, summary: full.summary,
-    skills: full.skills.map((s) => s.skill.name),
-    experiences: full.experiences.map((e) => ({ role: e.role, company: e.company, description: e.description, startDate: e.startDate, endDate: e.endDate })),
-    education: full.education.map((e) => ({ school: e.school, degree: e.degree })),
-    projects: full.projects.map((p) => ({ name: p.name, description: p.description, technologies: p.technologies })),
-    certifications: [...full.certifications.map((c) => ({ name: c.name })), ...full.trainings.map((t) => ({ name: t.name }))],
-  };
-  const ra = await ai.analyzeResume(snapshot);
-  await prisma.resumeAnalysis.create({ data: { userId, resumeId: resume.id, score: ra.score, sections: ra.sections, strengths: ra.strengths, weaknesses: ra.weaknesses, suggestions: ra.suggestions, keywordsFound: ra.keywordsFound, keywordsSuggested: ra.keywordsSuggested, provider: ai.name, isDemo: true } });
-  for (const key of ["kapitan-fullstack-jr", "sampaguita-nextjs"]) {
-    const job = await prisma.job.findFirstOrThrow({ where: { source: "seed", externalId: key }, include: { skills: { include: { skill: true } } } });
-    const r = await ai.analyzeATS(snapshot, job.skills.map((s) => s.skill.name));
-    await prisma.aTSAnalysis.create({ data: { userId, resumeId: resume.id, jobId: job.id, score: r.score, matchedKeywords: r.matchedKeywords, missingKeywords: r.missingKeywords, checks: r.checks, recommendations: r.recommendations, provider: ai.name, isDemo: true } });
-  }
 }
 
 async function seedSecondUser() {

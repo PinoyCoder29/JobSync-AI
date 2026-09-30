@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { logoutAction } from "@/app/actions/auth.actions";
 import { MobileNav } from "./MobileNav";
 import { NavLinks } from "./NavLinks";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 export async function AppShell({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -21,6 +22,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
           <input id="global-search" name="q" type="search" className="form-control" placeholder="Search jobs, companies or skills" />
         </form>
         <div className="d-flex align-items-center gap-2">
+          <ThemeToggle />
           {user ? (
             <details className="user-menu">
               <summary>

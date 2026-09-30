@@ -1,5 +1,3 @@
-import { AppError } from "@/lib/errors";
-import { analysisRepository } from "@/repositories/analysis.repository";
 import { jobRepository } from "@/repositories/job.repository";
 import { profileRepository } from "@/repositories/profile.repository";
 import { getAIProvider } from "./ai";
@@ -8,23 +6,6 @@ import { resumeService } from "./resume.service";
 export type SectionScore = { label: string; score: number };
 
 export const analysisService = {
-  latestResumeAnalysis(userId: string) {
-    return analysisRepository.latestResumeAnalysis(userId);
-  },
-
-  async runResumeAnalysis(userId: string) {
-    const data = await resumeService.getSnapshot(userId);
-    if (!data) throw new AppError("Build your resume first, then run the analysis.", "NOT_FOUND");
-    const ai = getAIProvider();
-    const r = await ai.analyzeResume(data.snapshot);
-    return analysisRepository.createResumeAnalysis({
-      userId, resumeId: data.resumeId, score: r.score, sections: r.sections,
-      strengths: r.strengths, weaknesses: r.weaknesses, suggestions: r.suggestions,
-      keywordsFound: r.keywordsFound, keywordsSuggested: r.keywordsSuggested,
-      provider: ai.name, isDemo: ai.isDemo,
-    });
-  },
-
   /** Skill gap = what active jobs ask for minus what the user lists (profile + resume). */
   async skillAnalysis(userId: string) {
     const [userSkills, snapshot, jobs] = await Promise.all([

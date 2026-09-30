@@ -2,10 +2,7 @@ import type { Metadata } from "next";
 import { ResumeWizard } from "@/components/resume/ResumeWizard";
 import { ResumeProvider } from "@/context/ResumeContext";
 import { requireUserId } from "@/lib/session";
-import {
-  computeResumeCompletion,
-  resumeService,
-} from "@/services/resume.service";
+import { computeResumeCompletion, resumeService } from "@/services/resume.service";
 
 export const metadata: Metadata = { title: "Resume builder" };
 

@@ -144,7 +144,7 @@ export default function SkillsForm() {
                   key={skill}
                   type="button"
                   className={`btn ${
-                    alreadyAdded ? "btn-dark" : "btn-outline-secondary"
+                    alreadyAdded ? "btn-ink" : "btn-outline-secondary"
                   }`}
                   onClick={() => toggleSuggestedSkill(skill)}
                 >
@@ -222,7 +222,7 @@ export default function SkillsForm() {
 
           <button
             type="button"
-            className="btn btn-dark"
+            className="btn btn-ink"
             onClick={handleAddCustomSkill}
             disabled={!customSkill.trim()}
           >

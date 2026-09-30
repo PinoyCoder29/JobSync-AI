@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { auth } from "@/auth";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 export const metadata: Metadata = {
   title: "JobSync AI – Job search, resume and interview prep in one place",
@@ -22,8 +23,9 @@ export default async function Home() {
     <div className="landing">
       <header className="landing-header container">
         <span className="brand">JobSync <span className="brand-ai">AI</span></span>
-        <nav className="d-flex gap-2" aria-label="Account">
-          <Link href="/jobs" className="btn btn-link text-dark">Browse jobs</Link>
+        <nav className="d-flex align-items-center gap-2" aria-label="Account">
+          <ThemeToggle />
+          <Link href="/jobs" className="btn btn-link text-body">Browse jobs</Link>
           {session?.user ? (
             <Link href="/dashboard" className="btn btn-brand">Open dashboard</Link>
           ) : (

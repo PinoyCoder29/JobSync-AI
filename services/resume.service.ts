@@ -114,3 +114,31 @@ export const resumeService = {
     };
   },
 };
+
+/** Plain-text rendering of a builder resume, used as the analyzer's input. */
+export function resumeDataToText(d: ResumeData): string {
+  const p = d.personalInfo;
+  const line = (...parts: (string | undefined)[]) => parts.filter(Boolean).join(" | ");
+  const out: string[] = [
+    p.fullName, p.jobTitle, line(p.email, p.phone, p.location), line(p.github, p.linkedin, p.portfolio),
+  ];
+  const section = (title: string, rows: string[]) => { if (rows.length) out.push("", title.toUpperCase(), ...rows); };
+  section("Summary", p.summary ? [p.summary] : []);
+  section("Experience", d.experience.map((e) => [line(e.position, e.company, e.location, `${e.startDate} - ${e.endDate || "Present"}`), e.description].filter(Boolean).join("\n")));
+  section("Internship", d.internship.map((e) => [line(e.position, e.company, e.department, e.location, `${e.startDate} - ${e.endDate || "Present"}`), e.description].filter(Boolean).join("\n")));
+  section("Education", d.education.map((e) => [line(e.degree, e.school, e.location, `${e.startDate} - ${e.endDate}`, e.honors), e.summary].filter(Boolean).join("\n")));
+  section("Skills", d.skills.length ? [d.skills.map((s) => s.name).join(", ")] : []);
+  section("Projects", d.projects.map((x) => [line(x.name, x.role, x.organization, x.date, x.skillsUsed && `Tech: ${x.skillsUsed}`, x.url), x.description].filter(Boolean).join("\n")));
+  section("Certifications", d.certifications.map((c) => line(c.name, c.issuer, c.issueDate, c.credentialUrl)));
+  section("Training", d.trainings.map((t) => [line(t.name, t.provider, t.date), t.description].filter(Boolean).join("\n")));
+  return out.join("\n");
+}
+
+export const resumeTextService = {
+  /** The user's saved resume as text. `resumeId` (if given) must belong to the current user. */
+  async getOwnedText(userId: string, resumeId?: string | null): Promise<{ text: string; resumeId: string }> {
+    const resume = await resumeRepository.findByUser(userId); // query is already filtered by userId
+    if (!resume || (resumeId && resume.id !== resumeId)) throw new AppError("Resume not found. Build your resume first, or upload / paste one.", "NOT_FOUND");
+    return { text: resumeDataToText(toResumeData(resume)), resumeId: resume.id };
+  },
+};

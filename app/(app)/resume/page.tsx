@@ -16,7 +16,6 @@ export default async function ResumePage() {
 
   return (
     <div>
-      <h1>hi</h1>
       <h1 className="page-title">Resume builder</h1>
       <p className="text-muted mb-4">
         {exists

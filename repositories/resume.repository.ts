@@ -1,121 +1,624 @@
-import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import type { z } from "zod";
+
 import type {
-  certificationSchema, educationSchema, experienceSchema, internshipSchema, personalInfoSchema, projectSchema, skillSchema, trainingSchema,
+  certificationSchema,
+  educationSchema,
+  experienceSchema,
+  internshipSchema,
+  personalInfoSchema,
+  projectSchema,
+  skillSchema,
+  trainingSchema,
 } from "@/lib/validations/resume";
 
-type Tx = Prisma.TransactionClient;
-const ordered = { orderBy: { sortOrder: "asc" as const } };
-const TX_OPTS = { timeout: 15_000 };
-
-/** Creates the user's resume row on first save (prefilled from the account), then runs `work` in the same transaction. */
-async function withResume(userId: string, lastStep: string | null, work: (tx: Tx, resumeId: string) => Promise<void>) {
-  return prisma.$transaction(async (tx) => {
-    let resume = await tx.resume.findUnique({ where: { userId }, select: { id: true } });
-    if (!resume) {
-      const user = await tx.user.findUnique({ where: { id: userId }, select: { name: true, email: true } });
-      resume = await tx.resume.create({ data: { userId, fullName: user?.name ?? "", email: user?.email ?? "" }, select: { id: true } });
-    }
-    await work(tx, resume.id);
-    if (lastStep) await tx.resume.update({ where: { id: resume.id }, data: { lastStep } });
-  }, TX_OPTS);
-}
+const ordered = {
+  orderBy: {
+    sortOrder: "asc" as const,
+  },
+};
 
 export const resumeRepository = {
+  /* =====================================================
+     FIND RESUME
+  ===================================================== */
+
   findByUser(userId: string) {
     return prisma.resume.findUnique({
-      where: { userId },
+      where: {
+        userId,
+      },
+
       include: {
-        experiences: ordered, education: ordered, projects: ordered, certifications: ordered, trainings: ordered,
-        skills: { ...ordered, include: { skill: true } },
+        experiences: ordered,
+
+        education: ordered,
+
+        projects: ordered,
+
+        certifications: ordered,
+
+        trainings: ordered,
+
+        skills: {
+          ...ordered,
+
+          include: {
+            skill: true,
+          },
+        },
       },
     });
   },
 
-  savePersonal(userId: string, p: z.infer<typeof personalInfoSchema>, lastStep: string | null) {
-    return withResume(userId, lastStep, async (tx, id) => {
-      await tx.resume.update({
-        where: { id },
-        data: { fullName: p.fullName, headline: p.jobTitle, email: p.email, phone: p.phone, location: p.location, githubUrl: p.github, linkedinUrl: p.linkedin, portfolioUrl: p.portfolio, summary: p.summary },
-      });
+  /* =====================================================
+     CREATE / FIND RESUME
+  ===================================================== */
+
+  async ensureResume(userId: string) {
+    const existing = await prisma.resume.findUnique({
+      where: {
+        userId,
+      },
+
+      select: {
+        id: true,
+      },
+    });
+
+    if (existing) {
+      return existing;
+    }
+
+    const user = await prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+
+      select: {
+        name: true,
+        email: true,
+      },
+    });
+
+    return prisma.resume.create({
+      data: {
+        userId,
+        fullName: user?.name ?? "",
+        email: user?.email ?? "",
+      },
+
+      select: {
+        id: true,
+      },
     });
   },
 
-  saveHasExperience(userId: string, value: boolean | null, lastStep: string | null) {
-    return withResume(userId, lastStep, async (tx, id) => {
-      await tx.resume.update({ where: { id }, data: { hasExperience: value } });
+  /* =====================================================
+     PERSONAL INFORMATION
+  ===================================================== */
+
+  async savePersonal(
+    userId: string,
+    p: z.infer<typeof personalInfoSchema>,
+    lastStep: string | null,
+  ) {
+    const resume = await this.ensureResume(userId);
+
+    return prisma.resume.update({
+      where: {
+        id: resume.id,
+      },
+
+      data: {
+        fullName: p.fullName,
+        headline: p.jobTitle,
+        email: p.email,
+        phone: p.phone,
+        location: p.location,
+
+        githubUrl: p.github,
+        linkedinUrl: p.linkedin,
+        portfolioUrl: p.portfolio,
+
+        summary: p.summary,
+
+        ...(lastStep
+          ? {
+              lastStep,
+            }
+          : {}),
+      },
     });
   },
 
-  replaceExperiences(userId: string, items: z.infer<typeof experienceSchema>[], lastStep: string | null) {
-    return withResume(userId, lastStep, async (tx, resumeId) => {
-      await tx.resumeExperience.deleteMany({ where: { resumeId, kind: "WORK" } });
-      await tx.resumeExperience.createMany({
-        data: items.map((e, i) => ({ resumeId, kind: "WORK" as const, company: e.company, role: e.position, location: e.location, startDate: e.startDate, endDate: e.endDate, description: e.description, sortOrder: i })),
-      });
+  /* =====================================================
+     EXPERIENCE QUESTION
+  ===================================================== */
+
+  async saveHasExperience(
+    userId: string,
+    value: boolean | null,
+    lastStep: string | null,
+  ) {
+    const resume = await this.ensureResume(userId);
+
+    return prisma.resume.update({
+      where: {
+        id: resume.id,
+      },
+
+      data: {
+        hasExperience: value,
+
+        ...(lastStep
+          ? {
+              lastStep,
+            }
+          : {}),
+      },
     });
   },
 
-  replaceInternships(userId: string, items: z.infer<typeof internshipSchema>[], lastStep: string | null) {
-    return withResume(userId, lastStep, async (tx, resumeId) => {
-      await tx.resumeExperience.deleteMany({ where: { resumeId, kind: "INTERNSHIP" } });
-      await tx.resumeExperience.createMany({
-        data: items.map((e, i) => ({ resumeId, kind: "INTERNSHIP" as const, company: e.company, role: e.position, department: e.department, location: e.location, startDate: e.startDate, endDate: e.endDate, description: e.description, sortOrder: i })),
+  /* =====================================================
+     WORK EXPERIENCE
+  ===================================================== */
+
+  async replaceExperiences(
+    userId: string,
+    items: z.infer<typeof experienceSchema>[],
+    lastStep: string | null,
+  ) {
+    const resume = await this.ensureResume(userId);
+
+    await prisma.resumeExperience.deleteMany({
+      where: {
+        resumeId: resume.id,
+        kind: "WORK",
+      },
+    });
+
+    if (items.length > 0) {
+      await prisma.resumeExperience.createMany({
+        data: items.map((experience, index) => ({
+          resumeId: resume.id,
+
+          kind: "WORK" as const,
+
+          company: experience.company,
+
+          role: experience.position,
+
+          location: experience.location,
+
+          startDate: experience.startDate,
+
+          endDate: experience.endDate,
+
+          description: experience.description,
+
+          sortOrder: index,
+        })),
       });
+    }
+
+    if (lastStep) {
+      await prisma.resume.update({
+        where: {
+          id: resume.id,
+        },
+
+        data: {
+          lastStep,
+        },
+      });
+    }
+
+    return prisma.resume.findUnique({
+      where: {
+        id: resume.id,
+      },
     });
   },
 
-  replaceEducation(userId: string, items: z.infer<typeof educationSchema>[], lastStep: string | null) {
-    return withResume(userId, lastStep, async (tx, resumeId) => {
-      await tx.resumeEducation.deleteMany({ where: { resumeId } });
-      await tx.resumeEducation.createMany({
-        data: items.map((e, i) => ({ resumeId, school: e.school, degree: e.degree, location: e.location, honors: e.honors, startDate: e.startDate, endDate: e.endDate, description: e.summary, sortOrder: i })),
+  /* =====================================================
+     INTERNSHIP
+  ===================================================== */
+
+  async replaceInternships(
+    userId: string,
+    items: z.infer<typeof internshipSchema>[],
+    lastStep: string | null,
+  ) {
+    const resume = await this.ensureResume(userId);
+
+    await prisma.resumeExperience.deleteMany({
+      where: {
+        resumeId: resume.id,
+        kind: "INTERNSHIP",
+      },
+    });
+
+    if (items.length > 0) {
+      await prisma.resumeExperience.createMany({
+        data: items.map((internship, index) => ({
+          resumeId: resume.id,
+
+          kind: "INTERNSHIP" as const,
+
+          company: internship.company,
+
+          role: internship.position,
+
+          department: internship.department,
+
+          location: internship.location,
+
+          startDate: internship.startDate,
+
+          endDate: internship.endDate,
+
+          description: internship.description,
+
+          sortOrder: index,
+        })),
       });
+    }
+
+    if (lastStep) {
+      await prisma.resume.update({
+        where: {
+          id: resume.id,
+        },
+
+        data: {
+          lastStep,
+        },
+      });
+    }
+
+    return prisma.resume.findUnique({
+      where: {
+        id: resume.id,
+      },
     });
   },
 
-  replaceProjects(userId: string, items: z.infer<typeof projectSchema>[], lastStep: string | null) {
-    return withResume(userId, lastStep, async (tx, resumeId) => {
-      await tx.resumeProject.deleteMany({ where: { resumeId } });
-      await tx.resumeProject.createMany({
-        data: items.map((p, i) => ({ resumeId, name: p.name, role: p.role, organization: p.organization, date: p.date, url: p.url, description: p.description, technologies: p.skillsUsed, sortOrder: i })),
+  /* =====================================================
+     EDUCATION
+  ===================================================== */
+
+  async replaceEducation(
+    userId: string,
+    items: z.infer<typeof educationSchema>[],
+    lastStep: string | null,
+  ) {
+    const resume = await this.ensureResume(userId);
+
+    await prisma.resumeEducation.deleteMany({
+      where: {
+        resumeId: resume.id,
+      },
+    });
+
+    if (items.length > 0) {
+      await prisma.resumeEducation.createMany({
+        data: items.map((education, index) => ({
+          resumeId: resume.id,
+
+          school: education.school,
+
+          degree: education.degree,
+
+          location: education.location,
+
+          honors: education.honors,
+
+          startDate: education.startDate,
+
+          endDate: education.endDate,
+
+          description: education.summary,
+
+          sortOrder: index,
+        })),
       });
+    }
+
+    if (lastStep) {
+      await prisma.resume.update({
+        where: {
+          id: resume.id,
+        },
+
+        data: {
+          lastStep,
+        },
+      });
+    }
+
+    return prisma.resume.findUnique({
+      where: {
+        id: resume.id,
+      },
     });
   },
 
-  replaceCertificationsAndTrainings(userId: string, certs: z.infer<typeof certificationSchema>[], trainings: z.infer<typeof trainingSchema>[], lastStep: string | null) {
-    return withResume(userId, lastStep, async (tx, resumeId) => {
-      await tx.resumeCertification.deleteMany({ where: { resumeId } });
-      await tx.resumeTraining.deleteMany({ where: { resumeId } });
-      await tx.resumeCertification.createMany({
-        data: certs.map((c, i) => ({ resumeId, name: c.name, issuer: c.issuer, issuedDate: c.issueDate, expirationDate: c.expirationDate, credentialId: c.credentialId, url: c.credentialUrl, sortOrder: i })),
+  /* =====================================================
+     PROJECTS
+  ===================================================== */
+
+  async replaceProjects(
+    userId: string,
+    items: z.infer<typeof projectSchema>[],
+    lastStep: string | null,
+  ) {
+    const resume = await this.ensureResume(userId);
+
+    await prisma.resumeProject.deleteMany({
+      where: {
+        resumeId: resume.id,
+      },
+    });
+
+    if (items.length > 0) {
+      await prisma.resumeProject.createMany({
+        data: items.map((project, index) => ({
+          resumeId: resume.id,
+
+          name: project.name,
+
+          role: project.role,
+
+          organization: project.organization,
+
+          date: project.date,
+
+          url: project.url,
+
+          description: project.description,
+
+          technologies: project.skillsUsed,
+
+          sortOrder: index,
+        })),
       });
-      await tx.resumeTraining.createMany({
-        data: trainings.map((t, i) => ({ resumeId, name: t.name, provider: t.provider, date: t.date, description: t.description, sortOrder: i })),
+    }
+
+    if (lastStep) {
+      await prisma.resume.update({
+        where: {
+          id: resume.id,
+        },
+
+        data: {
+          lastStep,
+        },
       });
+    }
+
+    return prisma.resume.findUnique({
+      where: {
+        id: resume.id,
+      },
     });
   },
 
-  replaceSkills(userId: string, items: z.infer<typeof skillSchema>[], lastStep: string | null) {
-    return withResume(userId, lastStep, async (tx, resumeId) => {
-      await tx.resumeSkill.deleteMany({ where: { resumeId } });
-      const unique = [...new Map(items.map((s) => [s.name.toLowerCase(), s])).values()];
-      const rows: { resumeId: string; skillId: string; category: string; sortOrder: number }[] = [];
-      for (const [i, s] of unique.entries()) {
-        const skill = await tx.skill.upsert({ where: { name: s.name }, create: { name: s.name }, update: {} });
-        rows.push({ resumeId, skillId: skill.id, category: s.category || "Other", sortOrder: i });
+  /* =====================================================
+     CERTIFICATIONS + TRAININGS
+  ===================================================== */
+
+  async replaceCertificationsAndTrainings(
+    userId: string,
+    certs: z.infer<typeof certificationSchema>[],
+    trainings: z.infer<typeof trainingSchema>[],
+    lastStep: string | null,
+  ) {
+    const resume = await this.ensureResume(userId);
+
+    await prisma.resumeCertification.deleteMany({
+      where: {
+        resumeId: resume.id,
+      },
+    });
+
+    await prisma.resumeTraining.deleteMany({
+      where: {
+        resumeId: resume.id,
+      },
+    });
+
+    if (certs.length > 0) {
+      await prisma.resumeCertification.createMany({
+        data: certs.map((certification, index) => ({
+          resumeId: resume.id,
+
+          name: certification.name,
+
+          issuer: certification.issuer,
+
+          issuedDate: certification.issueDate,
+
+          expirationDate: certification.expirationDate,
+
+          credentialId: certification.credentialId,
+
+          url: certification.credentialUrl,
+
+          sortOrder: index,
+        })),
+      });
+    }
+
+    if (trainings.length > 0) {
+      await prisma.resumeTraining.createMany({
+        data: trainings.map((training, index) => ({
+          resumeId: resume.id,
+
+          name: training.name,
+
+          provider: training.provider,
+
+          date: training.date,
+
+          description: training.description,
+
+          sortOrder: index,
+        })),
+      });
+    }
+
+    if (lastStep) {
+      await prisma.resume.update({
+        where: {
+          id: resume.id,
+        },
+
+        data: {
+          lastStep,
+        },
+      });
+    }
+
+    return prisma.resume.findUnique({
+      where: {
+        id: resume.id,
+      },
+    });
+  },
+
+  /* =====================================================
+     SKILLS
+  ===================================================== */
+
+  async replaceSkills(
+    userId: string,
+    items: z.infer<typeof skillSchema>[],
+    lastStep: string | null,
+  ) {
+    const resume = await this.ensureResume(userId);
+
+    await prisma.resumeSkill.deleteMany({
+      where: {
+        resumeId: resume.id,
+      },
+    });
+
+    if (items.length === 0) {
+      if (lastStep) {
+        await prisma.resume.update({
+          where: {
+            id: resume.id,
+          },
+
+          data: {
+            lastStep,
+          },
+        });
       }
-      await tx.resumeSkill.createMany({ data: rows });
+
+      return;
+    }
+
+    /*
+     * Remove duplicate skills.
+     */
+    const unique = [
+      ...new Map(
+        items.map((skill) => [skill.name.trim().toLowerCase(), skill]),
+      ).values(),
+    ];
+
+    const rows: {
+      resumeId: string;
+      skillId: string;
+      category: string;
+      sortOrder: number;
+    }[] = [];
+
+    /*
+     * Create/find global skills.
+     */
+    for (const [index, skillInput] of unique.entries()) {
+      const skillName = skillInput.name.trim();
+
+      if (!skillName) {
+        continue;
+      }
+
+      const skill = await prisma.skill.upsert({
+        where: {
+          name: skillName,
+        },
+
+        create: {
+          name: skillName,
+        },
+
+        update: {},
+      });
+
+      rows.push({
+        resumeId: resume.id,
+
+        skillId: skill.id,
+
+        category: skillInput.category?.trim() || "Other",
+
+        sortOrder: index,
+      });
+    }
+
+    if (rows.length > 0) {
+      await prisma.resumeSkill.createMany({
+        data: rows,
+      });
+    }
+
+    if (lastStep) {
+      await prisma.resume.update({
+        where: {
+          id: resume.id,
+        },
+
+        data: {
+          lastStep,
+        },
+      });
+    }
+
+    return prisma.resume.findUnique({
+      where: {
+        id: resume.id,
+      },
     });
   },
+
+  /* =====================================================
+     LAST STEP
+  ===================================================== */
 
   setLastStep(userId: string, lastStep: string) {
-    return prisma.resume.updateMany({ where: { userId }, data: { lastStep } });
+    return prisma.resume.updateMany({
+      where: {
+        userId,
+      },
+
+      data: {
+        lastStep,
+      },
+    });
   },
 
-  /** Deleting the resume cascades to every section (experiences, education, projects, certifications, trainings, skills). */
+  /* =====================================================
+     DELETE RESUME
+  ===================================================== */
+
   deleteByUser(userId: string) {
-    return prisma.resume.deleteMany({ where: { userId } });
+    return prisma.resume.deleteMany({
+      where: {
+        userId,
+      },
+    });
   },
 };

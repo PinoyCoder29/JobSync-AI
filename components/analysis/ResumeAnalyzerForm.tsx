@@ -47,3 +47,4 @@ export function ResumeAnalyzerForm({ hasBuilderResume, aiReady, hasResult }: { h
     </div>
   );
 }
+  

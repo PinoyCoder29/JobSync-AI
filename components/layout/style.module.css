@@ -1,0 +1,149 @@
+.mobileNav {
+  position: relative;
+}
+
+.menuButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
+  height: 36px;
+  padding: 0 12px;
+
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.menuButton i {
+  font-size: 17px;
+  line-height: 1;
+}
+
+/* Backdrop */
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1040;
+
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(3px);
+}
+
+/* Drawer */
+
+.drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+
+  z-index: 1050;
+
+  width: 300px;
+  max-width: 88vw;
+
+  display: flex;
+  flex-direction: column;
+
+  padding: 16px;
+
+  background: var(--surface, #ffffff);
+
+  border-left: 1px solid var(--border-color, #e5e7eb);
+
+  box-shadow: -8px 0 30px rgba(0, 0, 0, 0.12);
+
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  transform: translateX(100%);
+  visibility: hidden;
+
+  transition:
+    transform 0.25s ease,
+    visibility 0.25s ease;
+}
+
+.drawerOpen {
+  transform: translateX(0);
+  visibility: visible;
+}
+
+/* Header */
+
+.drawerHeader {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+
+  width: 100%;
+
+  min-height: 34px;
+
+  margin-bottom: 12px;
+}
+
+/* Close */
+
+.closeButton {
+  width: 34px;
+  height: 34px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0;
+
+  border: 0;
+  border-radius: 8px;
+
+  background: transparent;
+
+  color: var(--text-secondary, #64748b);
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.closeButton:hover {
+  background: var(--surface-hover, #f1f5f9);
+  color: var(--text-primary, #111827);
+}
+
+.closeButton i {
+  font-size: 15px;
+}
+
+/* Navigation */
+
+.navigation {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+}
+
+/* Small screens */
+
+@media (max-width: 576px) {
+  .drawer {
+    width: 280px;
+    max-width: 86vw;
+    padding: 14px;
+  }
+
+  .drawerHeader {
+    margin-bottom: 8px;
+  }
+
+  .closeButton {
+    width: 32px;
+    height: 32px;
+  }
+}

@@ -17,9 +17,6 @@ export const metadata: Metadata = {
   title: "Dashboard",
 };
 
-/**
- * Get the current greeting using Manila time.
- */
 function greeting() {
   const hour =
     Number(
@@ -40,28 +37,6 @@ function greeting() {
 
   return "Good evening";
 }
-
-/**
- * Type for recent application activity.
- *
- * This prevents TypeScript from treating `a`
- * as an implicit `any`.
- */
-type RecentApplication = {
-  id: string;
-  position: string;
-  company: string;
-  status: string;
-  updatedAt: Date | string;
-};
-
-/**
- * Type for profile missing items.
- *
- * This prevents TypeScript from treating `m`
- * as an implicit `any`.
- */
-type ProfileMissingItem = string;
 
 export default async function DashboardPage() {
   const userId = await requireUserId();
@@ -101,11 +76,6 @@ export default async function DashboardPage() {
     },
   ];
 
-  const missingProfileItems = d.profileCompletion
-    .missing as ProfileMissingItem[];
-
-  const recentApplications = d.recentApplications as RecentApplication[];
-
   return (
     <div className="d-grid gap-5">
       {/* =========================================================
@@ -118,7 +88,6 @@ export default async function DashboardPage() {
 
         <p className="text-muted">Your career progress at a glance.</p>
 
-        {/* Readiness */}
         <div className="readiness">
           <div className="flex-grow-1">
             <p className="readiness-line">
@@ -139,7 +108,6 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* Statistics */}
         <dl className="stat-strip">
           {stats.map((stat) => (
             <div key={stat.label} className="stat">
@@ -216,7 +184,6 @@ export default async function DashboardPage() {
         <SectionHeader title="Career insights" />
 
         <div className="row g-4">
-          {/* Strongest skills */}
           <div className="col-lg-6">
             <h3 className="sub-title">Strongest skills</h3>
 
@@ -232,7 +199,6 @@ export default async function DashboardPage() {
               )}
             </div>
 
-            {/* Skill gaps */}
             <h3 className="sub-title">
               Skills open jobs ask for that you don&apos;t list
             </h3>
@@ -256,32 +222,28 @@ export default async function DashboardPage() {
             </Link>
           </div>
 
-          {/* Profile improvements */}
           <div className="col-lg-6">
             <h3 className="sub-title">Profile improvements</h3>
 
-            {missingProfileItems.length > 0 ? (
+            {d.profileCompletion.missing.length > 0 ? (
               <ul className="check-list">
-                {missingProfileItems
-                  .slice(0, 4)
-                  .map((missingItem: ProfileMissingItem) => (
-                    <li key={missingItem}>
-                      <Link href="/profile">{missingItem}</Link>
-                    </li>
-                  ))}
+                {d.profileCompletion.missing.slice(0, 4).map((missingItem) => (
+                  <li key={missingItem}>
+                    <Link href="/profile">{missingItem}</Link>
+                  </li>
+                ))}
               </ul>
             ) : (
               <p className="text-muted small">Your profile is complete.</p>
             )}
 
-            {/* Resume suggestions */}
             <h3 className="sub-title mt-4">
               Resume suggestions <span className="demo-tag">Demo</span>
             </h3>
 
             {d.resumeSuggestions.length > 0 ? (
               <ul className="check-list">
-                {d.resumeSuggestions.map((suggestion: string) => (
+                {d.resumeSuggestions.map((suggestion) => (
                   <li key={suggestion}>{suggestion}</li>
                 ))}
               </ul>
@@ -301,7 +263,7 @@ export default async function DashboardPage() {
       <section>
         <SectionHeader title="Recent application activity" />
 
-        {recentApplications.length === 0 ? (
+        {d.recentApplications.length === 0 ? (
           <EmptyState
             icon="bi-kanban"
             title="No applications yet"
@@ -311,7 +273,7 @@ export default async function DashboardPage() {
           />
         ) : (
           <ul className="activity-list">
-            {recentApplications.map((application: RecentApplication) => (
+            {d.recentApplications.map((application) => (
               <li key={application.id}>
                 <div>
                   <strong>{application.position}</strong>

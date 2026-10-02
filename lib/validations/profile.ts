@@ -35,4 +35,5 @@ export const settingsSchema = z.object({
   notifyJobAlerts: z.boolean(),
   notifyProductNews: z.boolean(),
   profileVisible: z.boolean(),
+  visibility: z.enum(["PUBLIC", "CONNECTIONS_ONLY", "PRIVATE"]).default("PUBLIC"),
 });

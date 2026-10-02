@@ -1,20 +1,30 @@
 import type { Metadata } from "next";
+import { MediaUploader } from "@/components/media/MediaUploader";
 import { ProfileForm } from "@/components/profile/ProfileForm";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { requireUserId } from "@/lib/session";
+import { mediaService } from "@/services/media/media.service";
 import { profileService } from "@/services/profile.service";
 
 export const metadata: Metadata = { title: "Profile" };
 
 export default async function ProfilePage() {
   const userId = await requireUserId();
-  const { user, profile, skills, completion } = await profileService.get(userId);
+  const [{ user, profile, skills, completion }, images] = await Promise.all([profileService.get(userId), mediaService.getUserImageUrls(userId)]);
+  const displayName = user?.name ?? user?.email ?? "You";
   return (
     <div>
       <h1 className="page-title">Profile</h1>
       <p className="text-muted mb-4">What employers and the matching score use to understand you.</p>
       <div className="row g-5">
         <div className="col-lg-8">
+          <section className="side-panel mb-4" aria-labelledby="photos-title">
+            <h2 className="sub-title" id="photos-title">Photos</h2>
+            <div className="d-grid gap-4">
+              <MediaUploader kind="avatar" currentUrl={images.avatarUrl} name={displayName} />
+              <MediaUploader kind="cover" currentUrl={images.coverUrl} name={displayName} />
+            </div>
+          </section>
           <ProfileForm
             values={{
               name: user?.name ?? "",

@@ -1,5 +1,6 @@
 export const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: "bi-grid-1x2" },
+  { href: "/network", label: "My Network", icon: "bi-people" },
   { href: "/jobs", label: "Find Jobs", icon: "bi-search" },
   { href: "/saved-jobs", label: "Saved Jobs", icon: "bi-bookmark" },
   { href: "/applications", label: "Applications", icon: "bi-kanban" },

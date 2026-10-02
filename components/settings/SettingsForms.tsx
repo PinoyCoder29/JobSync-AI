@@ -6,7 +6,7 @@ import { Field } from "@/components/ui/Field";
 import { FormMessage } from "@/components/ui/FormMessage";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 
-type Prefs = { notifyApplicationUpdates: boolean; notifyJobAlerts: boolean; notifyProductNews: boolean; profileVisible: boolean };
+type Prefs = { notifyApplicationUpdates: boolean; notifyJobAlerts: boolean; notifyProductNews: boolean; profileVisible: boolean; visibility: "PUBLIC" | "CONNECTIONS_ONLY" | "PRIVATE" };
 
 function Switch({ name, label, hint, checked }: { name: string; label: string; hint: string; checked: boolean }) {
   return (
@@ -26,6 +26,15 @@ export function PreferencesForm({ prefs }: { prefs: Prefs }) {
       <Switch name="notifyJobAlerts" label="Job alerts" hint="New jobs that match your profile." checked={prefs.notifyJobAlerts} />
       <Switch name="notifyProductNews" label="Product news" hint="Occasional updates about JobSync AI." checked={prefs.notifyProductNews} />
       <Switch name="profileVisible" label="Profile visible to employers" hint="Controls whether employers may find your profile once employer features exist." checked={prefs.profileVisible} />
+      <div className="mb-4">
+        <label className="form-label fw-semibold" htmlFor="visibility">Who can see your profile</label>
+        <select id="visibility" name="visibility" className="form-select" defaultValue={prefs.visibility}>
+          <option value="PUBLIC">Everyone on JobSync AI (appears in People you may know)</option>
+          <option value="CONNECTIONS_ONLY">My connections only</option>
+          <option value="PRIVATE">Only me</option>
+        </select>
+        <div className="form-text">Enforced on the server. Private profiles can&apos;t be followed or sent connection requests.</div>
+      </div>
       <div className="d-flex flex-wrap align-items-center gap-3">
         <SubmitButton>Save preferences</SubmitButton>
         <FormMessage state={state} />

@@ -4,10 +4,13 @@ import { logoutAction } from "@/app/actions/auth.actions";
 import { MobileNav } from "./MobileNav";
 import { NavLinks } from "./NavLinks";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { Avatar } from "@/components/ui/Avatar";
+import { mediaService } from "@/services/media/media.service";
 
 export async function AppShell({ children }: { children: React.ReactNode }) {
   const session = await auth();
   const user = session?.user;
+  const images = user?.id ? await mediaService.getUserImageUrls(user.id) : null;
 
   return (
     <div className="app-shell">
@@ -60,9 +63,13 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
           {user ? (
             <details className="user-menu">
               <summary>
-                <span className="avatar" aria-hidden="true">
-                  {(user.name ?? user.email ?? "U").charAt(0).toUpperCase()}
-                </span>
+                {images?.avatarSmUrl ? (
+                  <Avatar name={user.name ?? user.email ?? "U"} src={images.avatarSmUrl} size={32} />
+                ) : (
+                  <span className="avatar" aria-hidden="true">
+                    {(user.name ?? user.email ?? "U").charAt(0).toUpperCase()}
+                  </span>
+                )}
 
                 <span className="d-none d-sm-inline">
                   {user.name ?? user.email}

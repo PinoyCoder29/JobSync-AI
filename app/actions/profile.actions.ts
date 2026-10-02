@@ -32,6 +32,7 @@ export async function updateSettingsAction(_prev: ActionState, formData: FormDat
     notifyJobAlerts: on("notifyJobAlerts"),
     notifyProductNews: on("notifyProductNews"),
     profileVisible: on("profileVisible"),
+    visibility: formData.get("visibility") ?? "PUBLIC",
   });
   if (!parsed.success) return fieldErrors(parsed.error);
   try {

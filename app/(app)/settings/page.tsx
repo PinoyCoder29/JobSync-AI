@@ -35,6 +35,9 @@ export default async function SettingsPage() {
           notifyApplicationUpdates: profile?.notifyApplicationUpdates ?? true,
           notifyJobAlerts: profile?.notifyJobAlerts ?? true,
           notifyProductNews: profile?.notifyProductNews ?? false,
+          notifyReactions: profile?.notifyReactions ?? true,
+          notifyComments: profile?.notifyComments ?? true,
+          notifyConnections: profile?.notifyConnections ?? true,
           profileVisible: profile?.profileVisible ?? true,
           visibility: profile?.visibility ?? "PUBLIC",
         }} />

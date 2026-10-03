@@ -93,6 +93,74 @@ enum MediaKind {
   MESSAGE
 }
 
+// ───────── Social feed ─────────
+
+enum PostVisibility {
+  PUBLIC
+  CONNECTIONS_ONLY
+  PRIVATE
+}
+
+enum PostType {
+  TEXT
+  IMAGE
+  JOB
+  PROJECT
+  ACHIEVEMENT
+  CAREER_UPDATE
+  LINK
+  // Future: POLL, EVENT, ARTICLE
+}
+
+enum ReactionType {
+  LIKE
+  CELEBRATE
+  SUPPORT
+  INSIGHTFUL
+  CURIOUS
+}
+
+enum ReportTargetType {
+  POST
+  COMMENT
+}
+
+enum ReportStatus {
+  OPEN
+  REVIEWED
+  DISMISSED
+}
+
+enum NotificationType {
+  CONNECTION_REQUEST
+  CONNECTION_ACCEPTED
+  FOLLOWED
+  POST_REACTION
+  POST_COMMENT
+  COMMENT_REPLY
+  POST_SHARED
+  JOB_RECOMMENDED
+  JOB_ALERT_MATCH
+  APPLICATION_STATUS
+  MENTION
+}
+
+enum FeaturedCategory {
+  FEATURED_JOB
+  FEATURED_COMPANY
+  FEATURED_PERSON
+  FEATURED_POST
+  FEATURED_SKILL
+  FEATURED_LEARNING
+  FEATURED_EVENT
+}
+
+enum FeaturedStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
 // ───────── Auth.js (Prisma Adapter) ─────────
 
 model User {
@@ -121,6 +189,15 @@ model User {
   follows             Follow[]          @relation("FollowFollower")
   blocksCreated       Block[]           @relation("BlockBlocker")
   blocksReceived      Block[]           @relation("BlockBlocked")
+  posts               Post[]
+  postReactions       PostReaction[]
+  comments            Comment[]
+  commentReactions    CommentReaction[]
+  savedPosts          SavedPost[]
+  reportsFiled        ContentReport[]   @relation("ReportReporter")
+  notificationsReceived Notification[]  @relation("NotificationRecipient")
+  notificationsSent   Notification[]    @relation("NotificationActor")
+  jobAlerts           JobAlert[]
 }
 
 model Account {
@@ -180,6 +257,10 @@ model Profile {
   notifyApplicationUpdates Boolean          @default(true)
   notifyJobAlerts          Boolean          @default(true)
   notifyProductNews        Boolean          @default(false)
+  // Social notification preferences (checked before a notification row is created)
+  notifyReactions          Boolean          @default(true)
+  notifyComments           Boolean          @default(true)
+  notifyConnections        Boolean          @default(true)
   profileVisible           Boolean          @default(true)
   // Network privacy. `profileVisible = false` is still honoured and always means PRIVATE.
   visibility               ProfileVisibility @default(PUBLIC)
@@ -365,10 +446,17 @@ model Job {
   matches            JobMatch[]
   atsAnalyses        ATSAnalysis[]
 
+  postsAbout         Post[]
+
   @@unique([source, externalId])
   @@index([title])
   @@index([location])
   @@index([postedAt])
+  @@index([isActive, postedAt])
+  @@index([workArrangement])
+  @@index([employmentType])
+  @@index([experienceLevel])
+  @@index([company])
 }
 
 model JobSkill {
@@ -564,6 +652,7 @@ model Media {
   owner          User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   profileAvatars Profile[] @relation("ProfileAvatar")
   profileCovers  Profile[] @relation("ProfileCover")
+  postMedia      PostMedia[]
 
   @@index([ownerId, kind])
 }
@@ -611,4 +700,192 @@ model Block {
 
   @@unique([blockerId, blockedId])
   @@index([blockedId])
+}
+
+
+// ───────── Posts, reactions, comments ─────────
+
+model Post {
+  id           String         @id @default(cuid())
+  authorId     String
+  content      String?        @db.Text
+  postType     PostType       @default(TEXT)
+  visibility   PostVisibility @default(PUBLIC)
+  // Optional typed attachments. Everything is validated server-side before it is stored.
+  title        String?        // project / achievement headline
+  linkUrl      String?        // http(s) only (see lib/safe-url.ts)
+  jobId        String?        // JOB posts point at a real Job row
+  sharedPostId String?        // a share is a new Post that points at the original
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  editedAt     DateTime?
+  author       User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  job          Job?           @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  sharedPost   Post?          @relation("PostShares", fields: [sharedPostId], references: [id], onDelete: Cascade)
+  shares       Post[]         @relation("PostShares")
+  media        PostMedia[]
+  reactions    PostReaction[]
+  comments     Comment[]
+  savedBy      SavedPost[]
+  reports      ContentReport[]
+  notifications Notification[]
+
+  @@index([authorId, createdAt])
+  @@index([createdAt, id])
+  @@index([visibility, createdAt])
+  @@index([sharedPostId])
+  @@index([jobId])
+}
+
+// Only metadata lives here; the binary is on Cloudinary (see Media).
+model PostMedia {
+  id        String @id @default(cuid())
+  postId    String
+  mediaId   String @unique
+  sortOrder Int    @default(0)
+  alt       String?
+  post      Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  media     Media  @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@index([postId, sortOrder])
+}
+
+// One reaction per user per post. Changing a reaction updates the same row.
+model PostReaction {
+  id        String       @id @default(cuid())
+  postId    String
+  userId    String
+  type      ReactionType @default(LIKE)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  post      Post         @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@index([postId, type])
+  @@index([userId])
+}
+
+// Comments nest ONE level only: a reply's parent must itself be a top-level comment (enforced in the service).
+model Comment {
+  id        String            @id @default(cuid())
+  postId    String
+  authorId  String
+  parentId  String?
+  content   String            @db.Text
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  post      Post              @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author    User              @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parent    Comment?          @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   Comment[]         @relation("CommentReplies")
+  reactions CommentReaction[]
+  reports   ContentReport[]
+  notifications Notification[]
+
+  @@index([postId, createdAt])
+  @@index([authorId])
+  @@index([parentId, createdAt])
+}
+
+model CommentReaction {
+  id        String       @id @default(cuid())
+  commentId String
+  userId    String
+  type      ReactionType @default(LIKE)
+  createdAt DateTime     @default(now())
+  comment   Comment      @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([commentId, userId])
+  @@index([commentId])
+}
+
+// Saved jobs keep using SavedJob; this table is only for saved posts.
+model SavedPost {
+  id      String   @id @default(cuid())
+  userId  String
+  postId  String
+  savedAt DateTime @default(now())
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post    Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@index([userId, savedAt])
+}
+
+model ContentReport {
+  id         String           @id @default(cuid())
+  reporterId String
+  targetType ReportTargetType
+  postId     String?
+  commentId  String?
+  reason     String
+  details    String?          @db.Text
+  status     ReportStatus     @default(OPEN)
+  createdAt  DateTime         @default(now())
+  reporter   User             @relation("ReportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  post       Post?            @relation(fields: [postId], references: [id], onDelete: Cascade)
+  comment    Comment?         @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@unique([reporterId, postId])
+  @@unique([reporterId, commentId])
+  @@index([status, createdAt])
+}
+
+// ───────── Notifications ─────────
+
+model Notification {
+  id          String           @id @default(cuid())
+  recipientId String
+  actorId     String?
+  type        NotificationType
+  postId      String?
+  commentId   String?
+  jobId       String?
+  readAt      DateTime?
+  createdAt   DateTime         @default(now())
+  recipient   User             @relation("NotificationRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  actor       User?            @relation("NotificationActor", fields: [actorId], references: [id], onDelete: Cascade)
+  post        Post?            @relation(fields: [postId], references: [id], onDelete: Cascade)
+  comment     Comment?         @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId, readAt, createdAt])
+  @@index([recipientId, createdAt])
+}
+
+// ───────── Featured content (admin-ready; algorithmic fallback lives in the service) ─────────
+
+model FeaturedItem {
+  id         String           @id @default(cuid())
+  category   FeaturedCategory
+  targetId   String           // job id, post id, user id, company name, skill name ... depending on category
+  title      String?
+  priority   Int              @default(0)
+  status     FeaturedStatus   @default(DRAFT)
+  startsAt   DateTime?
+  endsAt     DateTime?
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  @@index([category, status, priority])
+}
+
+// ───────── Job alerts ─────────
+
+model JobAlert {
+  id              String           @id @default(cuid())
+  userId          String
+  keyword         String?
+  location        String?
+  skills          String[]
+  workArrangement WorkArrangement?
+  employmentType  EmploymentType?
+  experienceLevel ExperienceLevel?
+  minSalary       Int?             // monthly, same unit as Job.salaryMin/Max
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isActive])
 }

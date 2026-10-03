@@ -4,7 +4,7 @@ import authConfig from "./auth.config";
 
 const { auth } = NextAuth(authConfig);
 
-const PROTECTED = ["/dashboard", "/network", "/people", "/saved-jobs", "/applications", "/resume", "/resume-analyzer", "/ats-checker", "/skill-analysis", "/interview", "/profile", "/settings"];
+const PROTECTED = ["/dashboard", "/network", "/people", "/saved-jobs", "/applications", "/resume", "/resume-analyzer", "/ats-checker", "/skill-analysis", "/interview", "/profile", "/settings", "/messages", "/notifications", "/assistant", "/saved-posts"];
 
 export default auth((req) => {
   const { pathname } = req.nextUrl;
@@ -16,7 +16,7 @@ export default auth((req) => {
     return NextResponse.redirect(url);
   }
   if (req.auth && (pathname === "/login" || pathname === "/register")) {
-    return NextResponse.redirect(new URL("/dashboard", req.nextUrl));
+    return NextResponse.redirect(new URL("/", req.nextUrl));
   }
   return NextResponse.next();
 });

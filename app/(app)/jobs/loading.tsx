@@ -1,12 +1,13 @@
-import { CardSkeleton, Skeleton } from "@/components/ui/Skeleton";
+import { Skeleton } from "@/components/ui/Skeleton";
 
-export default function Loading() {
+export default function JobsLoading() {
   return (
     <div role="status" aria-label="Loading jobs">
-      <Skeleton height={34} width="30%" className="mb-4" />
-      <div className="row g-4">
-        <div className="col-lg-4 col-xl-3 d-none d-lg-block"><Skeleton height={420} /></div>
-        <div className="col-lg-8 col-xl-9 d-grid gap-3"><CardSkeleton /><CardSkeleton /><CardSkeleton /></div>
+      <Skeleton height={32} width="30%" className="mb-3" />
+      <Skeleton height={96} className="mb-3" />
+      <div className="jobs-split">
+        <div className="d-grid gap-2">{[0, 1, 2, 3].map((i) => <div key={i} className="job-card"><Skeleton height={18} width="55%" className="mb-2" /><Skeleton height={14} width="35%" className="mb-2" /><Skeleton height={14} width="70%" /></div>)}</div>
+        <div className="jobs-detail d-none d-lg-block"><Skeleton height={28} width="55%" className="mb-3" /><Skeleton height={14} width="30%" className="mb-4" /><Skeleton height={14} className="mb-2" /><Skeleton height={14} width="85%" /></div>
       </div>
     </div>
   );

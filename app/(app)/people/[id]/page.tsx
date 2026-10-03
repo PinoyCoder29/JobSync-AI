@@ -6,7 +6,9 @@ import { SkillBadge } from "@/components/ui/SkillBadge";
 import { safeHttpUrl } from "@/lib/safe-url";
 import { requireUserId } from "@/lib/session";
 import { userIdSchema } from "@/lib/validations/network";
+import { PostCard } from "@/components/social/PostCard";
 import { networkingService } from "@/services/networking.service";
+import { feedService } from "@/services/social/feed.service";
 
 export const metadata: Metadata = { title: "Profile" };
 
@@ -31,6 +33,12 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
       </div>
     );
   }
+
+  // Posts: the same server-side visibility rules as the feed (public, plus connections-only when connected).
+  const posts = await feedService
+    .authorPosts(viewerId, view.id, view.relationship.state === "CONNECTED", null, 5)
+    .then((p) => p.items)
+    .catch((e) => { console.error("Profile posts failed", e); return null; });
 
   const links = [
     { label: "Portfolio", icon: "bi-globe2", href: safeHttpUrl(view.links.portfolio) },
@@ -65,6 +73,12 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
           </ul>
         </section>
       )}
+      <section className="profile-section" aria-labelledby="profile-posts">
+        <h2 id="profile-posts" className="section-title">Posts</h2>
+        {posts === null ? <p className="text-muted mb-0">We couldn't load posts right now.</p>
+          : posts.length === 0 ? <p className="text-muted mb-0">{view.name} hasn't shared any posts yet.</p>
+          : <div className="d-grid gap-3">{posts.map((p) => <PostCard key={p.id} post={p} />)}</div>}
+      </section>
     </article>
   );
 }

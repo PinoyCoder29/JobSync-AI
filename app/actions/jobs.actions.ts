@@ -16,7 +16,7 @@ export async function toggleSaveJobAction(formData: FormData): Promise<void> {
   const userId = await getCurrentUserId();
   if (!userId) redirect(`/login?callbackUrl=${encodeURIComponent(`/jobs/${jobId.data}`)}`);
   await jobService.toggleSave(userId, jobId.data);
-  ["/jobs", "/saved-jobs", "/dashboard", `/jobs/${jobId.data}`].forEach((p) => revalidatePath(p));
+  ["/", "/jobs", "/saved-jobs", "/dashboard", `/jobs/${jobId.data}`].forEach((p) => revalidatePath(p));
 }
 
 export async function trackApplicationAction(formData: FormData): Promise<void> {

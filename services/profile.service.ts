@@ -54,7 +54,7 @@ export const profileService = {
     );
   },
 
-  updateSettings(userId: string, settings: { notifyApplicationUpdates: boolean; notifyJobAlerts: boolean; notifyProductNews: boolean; profileVisible: boolean; visibility: "PUBLIC" | "CONNECTIONS_ONLY" | "PRIVATE" }) {
+  updateSettings(userId: string, settings: { notifyApplicationUpdates: boolean; notifyJobAlerts: boolean; notifyProductNews: boolean; notifyReactions: boolean; notifyComments: boolean; notifyConnections: boolean; profileVisible: boolean; visibility: "PUBLIC" | "CONNECTIONS_ONLY" | "PRIVATE" }) {
     return profileRepository.updateSettings(userId, settings);
   },
 };

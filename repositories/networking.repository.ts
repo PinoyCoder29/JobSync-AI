@@ -180,6 +180,24 @@ export const discoveryRepository = {
       select: { profile: { select: { targetRoles: true, location: true } }, skills: { select: { skill: { select: { name: true } } } } },
     });
   },
+  /** Card data for specific people (admin-picked Featured). Visibility is applied by the caller. */
+  findCards(ids: string[]) {
+    return prisma.user.findMany({ where: { id: { in: ids } }, select: PERSON_SELECT });
+  },
+  /** Public, discoverable people matching a text query (name, headline or skill). */
+  searchPeople(query: string, excludeIds: string[], take: number) {
+    const ci = { contains: query, mode: "insensitive" as const };
+    return prisma.user.findMany({
+      where: {
+        id: { notIn: excludeIds },
+        profile: { is: { visibility: "PUBLIC", profileVisible: true } },
+        OR: [{ name: ci }, { profile: { is: { headline: ci } } }, { skills: { some: { skill: { name: ci } } } }],
+      },
+      select: PERSON_SELECT,
+      orderBy: { createdAt: "desc" },
+      take,
+    });
+  },
   /** Minimal fields needed to decide whether someone can be connected with, followed or viewed. */
   findAccessInfo(id: string) {
     return prisma.user.findUnique({ where: { id }, select: { id: true, profile: { select: { visibility: true, profileVisible: true } } } });

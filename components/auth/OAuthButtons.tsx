@@ -3,7 +3,7 @@ import { SubmitButton } from "@/components/ui/SubmitButton";
 import { getEnabledOAuthProviders } from "@/lib/oauth-providers";
 
 /** Server component: renders only the providers whose keys are set in .env. */
-export function OAuthButtons({ callbackUrl = "/dashboard" }: { callbackUrl?: string }) {
+export function OAuthButtons({ callbackUrl = "/" }: { callbackUrl?: string }) {
   const providers = getEnabledOAuthProviders();
   if (providers.length === 0) return null;
 

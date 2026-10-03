@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { auth } from "@/auth";
 import { logoutAction } from "@/app/actions/auth.actions";
+import { BottomNav } from "./BottomNav";
 import { MobileNav } from "./MobileNav";
-import { NavLinks } from "./NavLinks";
+import { TopNav } from "./TopNav";
+import { notificationService } from "@/services/social/notification.service";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { Avatar } from "@/components/ui/Avatar";
 import { mediaService } from "@/services/media/media.service";
@@ -10,7 +12,9 @@ import { mediaService } from "@/services/media/media.service";
 export async function AppShell({ children }: { children: React.ReactNode }) {
   const session = await auth();
   const user = session?.user;
-  const images = user?.id ? await mediaService.getUserImageUrls(user.id) : null;
+  const [images, unread] = user?.id
+    ? await Promise.all([mediaService.getUserImageUrls(user.id), notificationService.unreadCount(user.id).catch(() => 0)])
+    : [null, 0];
 
   return (
     <div className="app-shell">
@@ -28,7 +32,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
 
         {/* Desktop Brand */}
         <Link
-          href={user ? "/dashboard" : "/"}
+          href="/"
           className="brand d-none d-lg-inline-flex"
         >
           JobSync <span className="brand-ai">AI</span>
@@ -36,13 +40,13 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
 
         {/* Search */}
         <form
-          action="/jobs"
+          action="/search"
           method="get"
           role="search"
           className="topbar-search d-none d-md-flex"
         >
           <label htmlFor="global-search" className="visually-hidden">
-            Search jobs
+            Search JobSync AI
           </label>
 
           <input
@@ -50,9 +54,12 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
             name="q"
             type="search"
             className="form-control"
-            placeholder="Search jobs, companies or skills"
+            placeholder="Search people, jobs, companies, posts"
           />
         </form>
+
+        {/* Primary navigation (desktop) */}
+        {user && <div className="d-none d-lg-block"><TopNav unread={unread} /></div>}
 
         {/* Right Side */}
         <div className="d-flex align-items-center gap-2 ms-auto">
@@ -109,17 +116,15 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
       </header>
 
       {/* App Body */}
-      <div className="app-body">
-        {/* Desktop Sidebar */}
-        <aside className="sidebar d-none d-lg-block">
-          <NavLinks />
-        </aside>
-
+      <div className="app-body app-body--topnav">
         {/* Main Content */}
         <main id="main" className="main-content">
           {children}
         </main>
       </div>
+
+      {/* Mobile bottom navigation */}
+      {user && <BottomNav />}
     </div>
   );
 }

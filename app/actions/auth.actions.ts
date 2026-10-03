@@ -27,7 +27,7 @@ export async function registerAction(_prev: ActionState, formData: FormData): Pr
   if (!parsed.success) return fieldErrors(parsed.error);
   try {
     await userService.register(parsed.data);
-    await signIn("credentials", { email: parsed.data.email, password: parsed.data.password, redirectTo: "/dashboard" });
+    await signIn("credentials", { email: parsed.data.email, password: parsed.data.password, redirectTo: "/" });
     return { ok: true };
   } catch (error) {
     if (error instanceof AuthError) return { ok: false, message: "Account created, but automatic sign-in failed. Please log in." };

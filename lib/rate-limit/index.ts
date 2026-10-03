@@ -13,6 +13,14 @@ export const RATE_RULES = {
   follow: { limit: 60, windowMs: 60 * 60_000, label: "follow actions" },
   block: { limit: 20, windowMs: 60 * 60_000, label: "block actions" },
   upload: { limit: 10, windowMs: 60 * 60_000, label: "uploads" },
+  createPost: { limit: 20, windowMs: 60 * 60_000, label: "posts" },
+  postWithImages: { limit: 15, windowMs: 60 * 60_000, label: "image uploads" },
+  comment: { limit: 60, windowMs: 60 * 60_000, label: "comments" },
+  reaction: { limit: 300, windowMs: 60 * 60_000, label: "reactions" },
+  share: { limit: 30, windowMs: 60 * 60_000, label: "shares" },
+  report: { limit: 20, windowMs: 60 * 60_000, label: "reports" },
+  save: { limit: 300, windowMs: 60 * 60_000, label: "save actions" },
+  jobAlert: { limit: 20, windowMs: 60 * 60_000, label: "job alerts" },
 } as const satisfies Record<string, RateRule>;
 
 const buckets = new Map<string, number[]>();

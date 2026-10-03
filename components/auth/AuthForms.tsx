@@ -11,7 +11,7 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
   const [state, action] = useActionState(loginAction, {});
   return (
     <form action={action} noValidate>
-      <input type="hidden" name="callbackUrl" value={callbackUrl ?? "/dashboard"} />
+      <input type="hidden" name="callbackUrl" value={callbackUrl ?? "/"} />
       <Field label="Email" name="email" type="email" state={state} autoComplete="email" required />
       <Field label="Password" name="password" type="password" state={state} autoComplete="current-password" required />
       <div className="mb-3"><FormMessage state={state} /></div>

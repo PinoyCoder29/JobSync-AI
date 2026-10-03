@@ -46,3 +46,13 @@ export function timeAgo(date: Date | string): string {
 export function scoreTone(score: number): "good" | "ok" | "low" {
   return score >= 80 ? "good" : score >= 60 ? "ok" : "low";
 }
+
+/** Compact monthly salary for cards: "₱60k–₱85k". */
+export function formatSalaryCompact(min: number | null, max: number | null, currency = "PHP"): string {
+  const symbol = currency === "PHP" ? "₱" : `${currency} `;
+  const k = (n: number) => (n >= 1000 ? `${Math.round(n / 100) / 10}`.replace(/\.0$/, "") + "k" : String(n));
+  if (min && max) return `${symbol}${k(min)}–${symbol}${k(max)}`;
+  if (min) return `From ${symbol}${k(min)}`;
+  if (max) return `Up to ${symbol}${k(max)}`;
+  return "Salary not disclosed";
+}

@@ -26,7 +26,7 @@ export const applicationRepository = {
     return prisma.application.findFirst({ where: { id, userId } });
   },
   findByJob(userId: string, jobId: string) {
-    return prisma.application.findFirst({ where: { userId, jobId }, select: { id: true } });
+    return prisma.application.findFirst({ where: { userId, jobId }, select: { id: true, status: true } });
   },
   /** Nested create runs in one implicit transaction: application + first history row. */
   create(data: NewApplication) {

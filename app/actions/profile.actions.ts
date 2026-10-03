@@ -31,6 +31,9 @@ export async function updateSettingsAction(_prev: ActionState, formData: FormDat
     notifyApplicationUpdates: on("notifyApplicationUpdates"),
     notifyJobAlerts: on("notifyJobAlerts"),
     notifyProductNews: on("notifyProductNews"),
+    notifyReactions: on("notifyReactions"),
+    notifyComments: on("notifyComments"),
+    notifyConnections: on("notifyConnections"),
     profileVisible: on("profileVisible"),
     visibility: formData.get("visibility") ?? "PUBLIC",
   });

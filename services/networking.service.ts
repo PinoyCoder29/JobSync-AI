@@ -1,3 +1,4 @@
+import { notificationService } from "@/services/social/notification.service";
 import { AppError } from "@/lib/errors";
 import { canAppearInDiscovery, canViewProfile, effectiveVisibility } from "@/lib/permissions/profile";
 import {
@@ -93,6 +94,7 @@ export const networkingService = {
         if (existing.requesterId === userId) throw new AppError("You've already sent a request to this person.", "CONFLICT");
         // They already asked us: sending a request back means both sides want it, so just connect.
         if (!(await connectionRepository.transition(existing.id, "PENDING", "ACCEPTED"))) throw new AppError("This request was already handled.", "CONFLICT");
+        notificationService.notify({ recipientId: targetId, actorId: userId, type: "CONNECTION_ACCEPTED" });
         return { message: "You're now connected." };
       }
       if (existing.status === "REJECTED" && existing.requesterId === userId && !rerequestAllowed(existing.respondedAt)) {
@@ -100,6 +102,7 @@ export const networkingService = {
       }
     }
     await connectionRepository.upsertRequest(userId, targetId, message);
+    notificationService.notify({ recipientId: targetId, actorId: userId, type: "CONNECTION_REQUEST" });
     return { message: "Connection request sent." };
   },
 
@@ -111,6 +114,7 @@ export const networkingService = {
       throw new AppError("This request is no longer available.", "NOT_FOUND");
     }
     if (!(await connectionRepository.transition(connectionId, "PENDING", decision))) throw new AppError("This request was already handled.", "CONFLICT");
+    if (decision === "ACCEPTED") notificationService.notify({ recipientId: other, actorId: userId, type: "CONNECTION_ACCEPTED" });
     return { message: decision === "ACCEPTED" ? "Connection accepted." : "Request declined." };
   },
 
@@ -143,6 +147,7 @@ export const networkingService = {
     });
     if (!allowed) throw new AppError("You can't follow this person.", "FORBIDDEN");
     await followRepository.follow(userId, "USER", targetId);
+    notificationService.notify({ recipientId: targetId, actorId: userId, type: "FOLLOWED" });
     return { message: "You're now following this person." };
   },
 

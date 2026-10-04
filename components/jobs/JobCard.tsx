@@ -11,7 +11,7 @@ export function JobCard({ job, savedAt, showSave = true }: { job: JobListItem; s
       <div className="d-flex justify-content-between align-items-start gap-3">
         <div className="min-w-0">
           <h3 className="job-title"><Link href={`/jobs/${job.id}`}>{job.title}</Link></h3>
-          <p className="job-company">{job.company}</p>
+          <p className="job-company text-truncate" title={job.company}>{job.company}</p>
         </div>
         <MatchPill value={job.match} />
       </div>

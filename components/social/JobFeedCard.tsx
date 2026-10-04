@@ -11,7 +11,7 @@ export function JobFeedCard({ job }: { job: JobSummaryDTO }) {
       <div className="d-flex justify-content-between gap-3 align-items-start">
         <div className="min-w-0">
           <h3 className="job-title mb-1"><Link href={`/jobs/${job.id}`}>{job.title}</Link></h3>
-          <p className="job-company mb-1">{job.company}</p>
+          <p className="job-company mb-1 text-truncate" title={job.company}>{job.company}</p>
           <p className="text-muted small mb-1">{ARRANGEMENT_LABEL[job.workArrangement]} · {EMPLOYMENT_LABEL[job.employmentType]}</p>
           <p className="job-salary mb-0">{formatSalaryCompact(job.salaryMin, job.salaryMax, job.currency)}<span className="text-muted fw-normal small">/month</span></p>
         </div>

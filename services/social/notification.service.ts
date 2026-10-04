@@ -6,7 +6,7 @@ import type { NotificationDTO } from "./types";
 
 const PAGE_SIZE = 20;
 
-type PrefKey = "notifyReactions" | "notifyComments" | "notifyConnections" | "notifyJobAlerts" | "notifyApplicationUpdates";
+type PrefKey = "notifyReactions" | "notifyComments" | "notifyConnections" | "notifyMessages" | "notifyJobAlerts" | "notifyApplicationUpdates";
 const PREFERENCE: Record<NotificationType, PrefKey> = {
   CONNECTION_REQUEST: "notifyConnections",
   CONNECTION_ACCEPTED: "notifyConnections",
@@ -16,13 +16,14 @@ const PREFERENCE: Record<NotificationType, PrefKey> = {
   POST_COMMENT: "notifyComments",
   COMMENT_REPLY: "notifyComments",
   MENTION: "notifyComments",
+  MESSAGE: "notifyMessages",
   JOB_RECOMMENDED: "notifyJobAlerts",
   JOB_ALERT_MATCH: "notifyJobAlerts",
   APPLICATION_STATUS: "notifyApplicationUpdates",
 };
 
-/** Noisy, repeatable actions only notify once until the previous one is read. */
-const DEDUPED: ReadonlySet<NotificationType> = new Set(["POST_REACTION", "FOLLOWED", "CONNECTION_REQUEST"]);
+/** Noisy, repeatable actions only notify once until the previous one is read. A MESSAGE is deduped per conversation, so a burst of messages is one notification. */
+const DEDUPED: ReadonlySet<NotificationType> = new Set(["POST_REACTION", "FOLLOWED", "CONNECTION_REQUEST", "MESSAGE"]);
 
 const TEXT: Record<NotificationType, string> = {
   CONNECTION_REQUEST: "sent you a connection request",
@@ -33,13 +34,15 @@ const TEXT: Record<NotificationType, string> = {
   COMMENT_REPLY: "replied to your comment",
   POST_SHARED: "shared your post",
   MENTION: "mentioned you",
+  MESSAGE: "sent you a message",
   JOB_RECOMMENDED: "A new job matches your profile",
   JOB_ALERT_MATCH: "A new job matches one of your alerts",
   APPLICATION_STATUS: "Your application status changed",
 };
 
-export function notificationHref(n: { type: NotificationType; postId: string | null; jobId: string | null; actorId: string | null }): string {
+export function notificationHref(n: { type: NotificationType; postId: string | null; jobId: string | null; actorId: string | null; conversationId?: string | null }): string {
   switch (n.type) {
+    case "MESSAGE": return n.conversationId ? `/messages/${n.conversationId}` : "/messages";
     case "CONNECTION_REQUEST": return "/network?tab=requests";
     case "CONNECTION_ACCEPTED":
     case "FOLLOWED": return n.actorId ? `/people/${n.actorId}` : "/network";
@@ -58,7 +61,7 @@ function toDTO(n: NotificationRecord): NotificationDTO {
     id: n.id,
     type: n.type,
     text: systemMessage ? TEXT[n.type] : `${name} ${TEXT[n.type]}`,
-    href: notificationHref({ type: n.type, postId: n.postId, jobId: n.jobId, actorId: n.actor?.id ?? null }),
+    href: notificationHref({ type: n.type, postId: n.postId, jobId: n.jobId, actorId: n.actor?.id ?? null, conversationId: n.conversationId }),
     actor: n.actor ? { id: n.actor.id, name, avatarUrl: avatar ? getOptimizedUrl(avatar, "avatarSm") : n.actor.image ?? null } : null,
     read: n.readAt !== null,
     createdAt: n.createdAt.toISOString(),
@@ -70,13 +73,13 @@ export const notificationService = {
    * Fire-and-forget: a failed notification must never fail the action that caused it, so this never throws.
    * Skips: notifying yourself, blocked pairs, recipients who switched this kind off, and repeats of noisy actions.
    */
-  async notify(input: { recipientId: string; actorId?: string; type: NotificationType; postId?: string; commentId?: string; jobId?: string }): Promise<void> {
+  async notify(input: { recipientId: string; actorId?: string; type: NotificationType; postId?: string; commentId?: string; jobId?: string; conversationId?: string }): Promise<void> {
     try {
       if (input.actorId && input.actorId === input.recipientId) return;
       if (input.actorId && (await blockRepository.isBlockedEitherWay(input.actorId, input.recipientId))) return;
       const prefs = await notificationRepository.preferences(input.recipientId);
       if (!prefs[PREFERENCE[input.type]]) return;
-      if (DEDUPED.has(input.type) && (await notificationRepository.unreadDuplicate({ recipientId: input.recipientId, actorId: input.actorId, type: input.type, postId: input.postId, jobId: input.jobId }))) return;
+      if (DEDUPED.has(input.type) && (await notificationRepository.unreadDuplicate({ recipientId: input.recipientId, actorId: input.actorId, type: input.type, postId: input.postId, jobId: input.jobId, conversationId: input.conversationId }))) return;
       await notificationRepository.create(input);
     } catch (error) {
       console.error("Notification failed", input.type, error);

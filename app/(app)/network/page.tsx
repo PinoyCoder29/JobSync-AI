@@ -9,6 +9,7 @@ import {
   unblockUserAction,
   unfollowAction,
 } from "@/app/actions/network.actions";
+import { startConversationAction } from "@/app/actions/message.actions";
 import { ActionButton } from "@/components/network/ActionButton";
 import { PersonCard } from "@/components/network/PersonCard";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -122,6 +123,7 @@ async function Connections({ userId, cursor }: { userId: string; cursor?: string
       <section aria-label="Connections" className="person-grid">
         {page.items.map(({ connectionId, person }) => (
           <PersonCard key={connectionId} person={person}>
+            <ActionButton action={startConversationAction} fields={{ targetUserId: person.id }} label="Message" icon="bi-chat-dots" pendingText="Opening…" className="btn btn-brand btn-sm" />
             <ActionButton action={removeConnectionAction} fields={{ targetUserId: person.id }} label="Remove" pendingText="Removing…" confirm={`Remove ${person.name} from your connections?`} />
           </PersonCard>
         ))}

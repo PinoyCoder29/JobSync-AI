@@ -21,7 +21,7 @@ function Body({ block, compact }: { block: FeaturedBlock; compact: boolean }) {
                   <strong className="text-truncate">{j.title}</strong>
                   {j.match !== null && <span className={`match-pill tone-${scoreTone(j.match)} flex-shrink-0`} title="Internal recommendation indicator, not a guarantee">{j.match}% match</span>}
                 </span>
-                <span className="text-muted small d-block">{j.company}</span>
+                <span className="text-muted small d-block text-truncate" title={j.company}>{j.company}</span>
                 <span className="small d-block">{ARRANGEMENT_LABEL[j.workArrangement]} · {EMPLOYMENT_LABEL[j.employmentType]}</span>
                 <span className="small fw-semibold d-block">{formatSalaryCompact(j.salaryMin, j.salaryMax, j.currency)}</span>
                 {!compact && j.reasons[0] && <span className="reason d-block mt-1"><i className="bi bi-lightbulb" aria-hidden="true" /> {j.reasons[0]}</span>}

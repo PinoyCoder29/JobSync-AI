@@ -51,14 +51,14 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
       <div className="profile-cover" style={view.coverUrl ? { backgroundImage: `url(${view.coverUrl})` } : undefined} aria-hidden="true" />
       <div className="profile-head">
         <div className="profile-avatar"><Avatar name={view.name} src={view.avatarUrl} size={112} /></div>
-        <div className="flex-grow-1">
-          <h1 className="h3 mb-0">{view.name}</h1>
-          {view.headline && <p className="mb-1">{view.headline}</p>}
+        <div className="flex-grow-1 profile-head-text">
+          <h1 className="h3 mb-0 text-break">{view.name}</h1>
+          {view.headline && <p className="mb-1 text-break">{view.headline}</p>}
           <p className="text-muted small mb-2">
             {view.location && <><i className="bi bi-geo-alt me-1" aria-hidden="true" />{view.location} · </>}
             {view.connections} connection{view.connections === 1 ? "" : "s"} · {view.followers} follower{view.followers === 1 ? "" : "s"}
           </p>
-          <RelationshipActions targetUserId={view.id} relationship={view.relationship} showBlock />
+          <RelationshipActions targetUserId={view.id} relationship={view.relationship} showBlock showMessage />
         </div>
       </div>
 

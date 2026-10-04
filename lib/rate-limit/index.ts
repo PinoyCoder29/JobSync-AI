@@ -21,6 +21,10 @@ export const RATE_RULES = {
   report: { limit: 20, windowMs: 60 * 60_000, label: "reports" },
   save: { limit: 300, windowMs: 60 * 60_000, label: "save actions" },
   jobAlert: { limit: 20, windowMs: 60 * 60_000, label: "job alerts" },
+  // Messaging: opening a NEW conversation is limited hard (anti mass-DM); chatting has an hourly cap plus a short burst cap.
+  startConversation: { limit: 30, windowMs: 60 * 60_000, label: "new conversations" },
+  sendMessage: { limit: 600, windowMs: 60 * 60_000, label: "messages" },
+  sendMessageBurst: { limit: 20, windowMs: 60_000, label: "messages" },
 } as const satisfies Record<string, RateRule>;
 
 const buckets = new Map<string, number[]>();

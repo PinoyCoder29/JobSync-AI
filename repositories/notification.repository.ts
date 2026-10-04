@@ -7,6 +7,7 @@ const SELECT = {
   postId: true,
   commentId: true,
   jobId: true,
+  conversationId: true,
   readAt: true,
   createdAt: true,
   actor: { select: { id: true, name: true, image: true, profile: { select: { avatarMedia: { select: { url: true } } } } } },
@@ -15,12 +16,12 @@ const SELECT = {
 export type NotificationRecord = Prisma.NotificationGetPayload<{ select: typeof SELECT }>;
 
 export const notificationRepository = {
-  create(data: { recipientId: string; actorId?: string; type: NotificationType; postId?: string; commentId?: string; jobId?: string }) {
+  create(data: { recipientId: string; actorId?: string; type: NotificationType; postId?: string; commentId?: string; jobId?: string; conversationId?: string }) {
     return prisma.notification.create({ data, select: { id: true } });
   },
 
   /** True when the same actor already has an UNREAD notification of this kind for this thing (prevents spam). */
-  async unreadDuplicate(data: { recipientId: string; actorId?: string; type: NotificationType; postId?: string; jobId?: string }) {
+  async unreadDuplicate(data: { recipientId: string; actorId?: string; type: NotificationType; postId?: string; jobId?: string; conversationId?: string }) {
     return (await prisma.notification.count({ where: { ...data, readAt: null } })) > 0;
   },
 
@@ -49,12 +50,17 @@ export const notificationRepository = {
     await prisma.notification.updateMany({ where: { id, recipientId, readAt: null }, data: { readAt: new Date() } });
   },
 
+  /** Opening a conversation clears its message notifications, so the bell and the chat never disagree. */
+  async markConversationRead(recipientId: string, conversationId: string) {
+    await prisma.notification.updateMany({ where: { recipientId, conversationId, type: "MESSAGE", readAt: null }, data: { readAt: new Date() } });
+  },
+
   /** Delivery preferences for the recipient (missing profile = defaults on). */
   async preferences(userId: string) {
     const p = await prisma.profile.findUnique({
       where: { userId },
-      select: { notifyReactions: true, notifyComments: true, notifyConnections: true, notifyJobAlerts: true, notifyApplicationUpdates: true },
+      select: { notifyReactions: true, notifyComments: true, notifyConnections: true, notifyMessages: true, notifyJobAlerts: true, notifyApplicationUpdates: true },
     });
-    return p ?? { notifyReactions: true, notifyComments: true, notifyConnections: true, notifyJobAlerts: true, notifyApplicationUpdates: true };
+    return p ?? { notifyReactions: true, notifyComments: true, notifyConnections: true, notifyMessages: true, notifyJobAlerts: true, notifyApplicationUpdates: true };
   },
 };

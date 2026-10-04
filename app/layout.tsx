@@ -24,7 +24,8 @@ export const metadata: Metadata = {
   description:
     "Find jobs, build your resume, check ATS compatibility, track applications and practice interviews in one place.",
 };
-export const viewport: Viewport = { width: "device-width", initialScale: 1 };
+// resizes-content: on Android Chrome the on-screen keyboard shrinks the page, so the chat input is never hidden behind it.
+export const viewport: Viewport = { width: "device-width", initialScale: 1, interactiveWidget: "resizes-content" };
 
 export default function RootLayout({
   children,

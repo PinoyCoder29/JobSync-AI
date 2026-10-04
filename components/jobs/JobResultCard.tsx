@@ -12,7 +12,7 @@ export function JobResultCard({ job, selected, onSelect }: { job: JobSummaryDTO;
       <div className="d-flex justify-content-between gap-2 align-items-start">
         <div className="min-w-0">
           <h3 className="job-title h6 mb-0">{job.title}</h3>
-          <p className="job-company mb-1">{job.company}</p>
+          <p className="job-company mb-1 text-truncate" title={job.company}>{job.company}</p>
         </div>
         {job.match !== null && <span className={`match-pill tone-${scoreTone(job.match)} flex-shrink-0`} title="Internal recommendation indicator, not a guarantee of fit">{job.match}% match</span>}
       </div>

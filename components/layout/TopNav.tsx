@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { CAREER_NAV, MORE_NAV, PRIMARY_NAV, isActivePath, type NavItem } from "./nav";
+import { formatBadge, useUnreadCounts } from "./UnreadCounts";
 
 function Item({ item, pathname, badge }: { item: NavItem; pathname: string; badge?: number }) {
   const active = isActivePath(pathname, item.href);
@@ -10,7 +11,7 @@ function Item({ item, pathname, badge }: { item: NavItem; pathname: string; badg
     <Link href={item.href} title={item.label} className={`topnav-link ${active ? "active" : ""}`} aria-current={active ? "page" : undefined}>
       <span className="topnav-icon">
         <i className={`bi ${item.icon}`} aria-hidden="true" />
-        {badge ? <span className="topnav-badge" aria-label={`${badge} unread`}>{badge > 9 ? "9+" : badge}</span> : null}
+        {badge ? <span className="topnav-badge" aria-label={`${badge} unread`}>{formatBadge(badge)}</span> : null}
       </span>
       <span className="topnav-label">{item.label}</span>
     </Link>
@@ -18,12 +19,13 @@ function Item({ item, pathname, badge }: { item: NavItem; pathname: string; badg
 }
 
 /** Desktop navigation: Home, Find Jobs, Network, Messages, Notifications | Resume, Applications, AI | Profile, More. */
-export function TopNav({ unread = 0 }: { unread?: number }) {
+export function TopNav() {
   const pathname = usePathname();
+  const { counts } = useUnreadCounts();
   const moreActive = MORE_NAV.some((i) => isActivePath(pathname, i.href));
   return (
     <nav className="topnav" aria-label="Main">
-      {PRIMARY_NAV.map((item) => <Item key={item.href} item={item} pathname={pathname} badge={item.href === "/notifications" ? unread : undefined} />)}
+      {PRIMARY_NAV.map((item) => <Item key={item.href} item={item} pathname={pathname} badge={item.href === "/notifications" ? counts.notifications : item.href === "/messages" ? counts.messages : undefined} />)}
       <span className="topnav-sep" aria-hidden="true" />
       {CAREER_NAV.map((item) => <Item key={item.href} item={item} pathname={pathname} />)}
       <span className="topnav-sep" aria-hidden="true" />

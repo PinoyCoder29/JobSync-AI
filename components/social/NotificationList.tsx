@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { api, postJson } from "@/lib/client/api";
+import { announceUnreadChange } from "@/components/layout/UnreadCounts";
 import { relativeTime } from "@/lib/time";
 import type { NotificationDTO } from "@/services/social/types";
 
@@ -19,12 +20,12 @@ export function NotificationList({ initial, initialCursor, initialHasMore, initi
   const [error, setError] = useState<string | null>(null);
 
   async function markAll() {
-    try { await postJson("/api/notifications"); setItems((l) => l.map((n) => ({ ...n, read: true }))); setUnread(0); }
+    try { await postJson("/api/notifications"); setItems((l) => l.map((n) => ({ ...n, read: true }))); setUnread(0); announceUnreadChange(); }
     catch (e) { setError(e instanceof Error ? e.message : "Couldn't mark as read."); }
   }
   async function markOne(id: string) {
     setItems((l) => l.map((n) => (n.id === id ? { ...n, read: true } : n)));
-    postJson("/api/notifications", { id }).then(({ data }) => setUnread((data as { unread: number }).unread)).catch(() => {});
+    postJson("/api/notifications", { id }).then(({ data }) => { setUnread((data as { unread: number }).unread); announceUnreadChange(); }).catch(() => {});
   }
   async function more() {
     if (!cursor || busy) return;
@@ -48,7 +49,7 @@ export function NotificationList({ initial, initialCursor, initialHasMore, initi
           <li key={n.id} className={n.read ? "" : "unread"}>
             <Link href={n.href} onClick={() => !n.read && markOne(n.id)}>
               {n.actor ? <Avatar name={n.actor.name} src={n.actor.avatarUrl} size={40} /> : <span className="notif-icon" aria-hidden="true"><i className="bi bi-briefcase" /></span>}
-              <span className="min-w-0"><span className="d-block">{n.text}</span><span className="small text-muted">{relativeTime(n.createdAt)}</span></span>
+              <span className="min-w-0"><span className="d-block">{n.type === "MESSAGE" && <i className="bi bi-chat-dots-fill me-1 text-brand-soft" aria-hidden="true" />}{n.text}</span><span className="small text-muted">{relativeTime(n.createdAt)}</span></span>
               {!n.read && <span className="unread-dot" aria-label="Unread" />}
             </Link>
           </li>

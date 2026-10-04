@@ -6,7 +6,7 @@ import { Field } from "@/components/ui/Field";
 import { FormMessage } from "@/components/ui/FormMessage";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 
-type Prefs = { notifyApplicationUpdates: boolean; notifyJobAlerts: boolean; notifyProductNews: boolean; notifyReactions: boolean; notifyComments: boolean; notifyConnections: boolean; profileVisible: boolean; visibility: "PUBLIC" | "CONNECTIONS_ONLY" | "PRIVATE" };
+type Prefs = { notifyApplicationUpdates: boolean; notifyJobAlerts: boolean; notifyProductNews: boolean; notifyReactions: boolean; notifyComments: boolean; notifyConnections: boolean; notifyMessages: boolean; profileVisible: boolean; visibility: "PUBLIC" | "CONNECTIONS_ONLY" | "PRIVATE" };
 
 function Switch({ name, label, hint, checked }: { name: string; label: string; hint: string; checked: boolean }) {
   return (
@@ -27,6 +27,7 @@ export function PreferencesForm({ prefs }: { prefs: Prefs }) {
       <Switch name="notifyReactions" label="Reactions and shares" hint="When someone reacts to or shares your post." checked={prefs.notifyReactions} />
       <Switch name="notifyComments" label="Comments and replies" hint="When someone comments on your post or replies to your comment." checked={prefs.notifyComments} />
       <Switch name="notifyConnections" label="Connections and followers" hint="Connection requests, accepted requests and new followers." checked={prefs.notifyConnections} />
+      <Switch name="notifyMessages" label="Messages" hint="When someone sends you a private message." checked={prefs.notifyMessages} />
       <Switch name="notifyProductNews" label="Product news" hint="Occasional updates about JobSync AI." checked={prefs.notifyProductNews} />
       <Switch name="profileVisible" label="Profile visible to employers" hint="Controls whether employers may find your profile once employer features exist." checked={prefs.profileVisible} />
       <div className="mb-4">

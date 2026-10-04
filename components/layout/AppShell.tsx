@@ -5,6 +5,9 @@ import { BottomNav } from "./BottomNav";
 import { MobileNav } from "./MobileNav";
 import { TopNav } from "./TopNav";
 import { notificationService } from "@/services/social/notification.service";
+import { messagingService } from "@/services/messaging/messaging.service";
+import { MobileBell } from "./MobileBell";
+import { UnreadCountsProvider } from "./UnreadCounts";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { Avatar } from "@/components/ui/Avatar";
 import { mediaService } from "@/services/media/media.service";
@@ -12,11 +15,17 @@ import { mediaService } from "@/services/media/media.service";
 export async function AppShell({ children }: { children: React.ReactNode }) {
   const session = await auth();
   const user = session?.user;
-  const [images, unread] = user?.id
-    ? await Promise.all([mediaService.getUserImageUrls(user.id), notificationService.unreadCount(user.id).catch(() => 0)])
-    : [null, 0];
+  // Each count fails independently to 0: a badge problem must never take the whole page down.
+  const [images, notifications, messages] = user?.id
+    ? await Promise.all([
+        mediaService.getUserImageUrls(user.id),
+        notificationService.unreadCount(user.id).catch(() => 0),
+        messagingService.unreadMessages(user.id).catch(() => 0),
+      ])
+    : [null, 0, 0];
 
   return (
+    <UnreadCountsProvider initial={{ notifications, messages }}>
     <div className="app-shell">
       {/* Skip to content */}
       <a href="#main" className="skip-link">
@@ -30,10 +39,10 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
           <MobileNav />
         </div>
 
-        {/* Desktop Brand */}
+        {/* Brand: shown on every screen size (compact on phones) */}
         <Link
           href="/"
-          className="brand d-none d-lg-inline-flex"
+          className="brand topbar-brand d-inline-flex"
         >
           JobSync <span className="brand-ai">AI</span>
         </Link>
@@ -59,12 +68,15 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
         </form>
 
         {/* Primary navigation (desktop) */}
-        {user && <div className="d-none d-lg-block"><TopNav unread={unread} /></div>}
+        {user && <div className="d-none d-lg-block"><TopNav /></div>}
 
         {/* Right Side */}
         <div className="d-flex align-items-center gap-2 ms-auto">
           {/* Theme Toggle */}
           <ThemeToggle />
+
+          {/* Notifications (phones/tablets): kept in the top header, right beside the profile avatar */}
+          {user && <MobileBell />}
 
           {/* Account */}
           {user ? (
@@ -126,5 +138,6 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
       {/* Mobile bottom navigation */}
       {user && <BottomNav />}
     </div>
+    </UnreadCountsProvider>
   );
 }

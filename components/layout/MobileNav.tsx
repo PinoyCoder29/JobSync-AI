@@ -19,8 +19,10 @@ export function MobileNav() {
         onClick={() => setOpen(true)}
         aria-expanded={open}
         aria-controls="mobile-nav"
+        aria-label="Open menu"
       >
-        <i className="bi bi-list me-1" aria-hidden="true" /> Menu
+        <i className="bi bi-list" aria-hidden="true" />
+        <span className="d-none d-sm-inline ms-1">Menu</span>
       </button>
       {open && (
         <div className="drawer-backdrop" onClick={() => setOpen(false)} />

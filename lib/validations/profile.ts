@@ -37,6 +37,7 @@ export const settingsSchema = z.object({
   notifyReactions: z.boolean().default(true),
   notifyComments: z.boolean().default(true),
   notifyConnections: z.boolean().default(true),
+  notifyMessages: z.boolean().default(true),
   profileVisible: z.boolean(),
   visibility: z.enum(["PUBLIC", "CONNECTIONS_ONLY", "PRIVATE"]).default("PUBLIC"),
 });

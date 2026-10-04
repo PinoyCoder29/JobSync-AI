@@ -24,7 +24,7 @@ export async function RecommendedJobsCard({ userId, limit = 3 }: { userId: strin
             <li key={j.id}>
               <Link href={`/jobs/${j.id}`} className="featured-job">
                 <strong className="d-block">{j.title}</strong>
-                <span className="text-muted small d-block">{j.company}</span>
+                <span className="text-muted small d-block text-truncate" title={j.company}>{j.company}</span>
                 <span className="small d-block">{ARRANGEMENT_LABEL[j.workArrangement]} · {EMPLOYMENT_LABEL[j.employmentType]}</span>
                 <span className="small fw-semibold d-block">{formatSalaryCompact(j.salaryMin, j.salaryMax, j.currency)}</span>
                 {j.match !== null && <span className={`match-pill tone-${scoreTone(j.match)} mt-1`} title="Internal recommendation indicator, not a guarantee of fit">{j.match}% match</span>}

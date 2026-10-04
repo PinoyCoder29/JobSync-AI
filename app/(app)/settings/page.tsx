@@ -38,6 +38,7 @@ export default async function SettingsPage() {
           notifyReactions: profile?.notifyReactions ?? true,
           notifyComments: profile?.notifyComments ?? true,
           notifyConnections: profile?.notifyConnections ?? true,
+          notifyMessages: profile?.notifyMessages ?? true,
           profileVisible: profile?.profileVisible ?? true,
           visibility: profile?.visibility ?? "PUBLIC",
         }} />

@@ -15,10 +15,25 @@ export function BottomNav() {
         const active = isActivePath(pathname, t.href);
         const badge = t.href === "/messages" ? counts.messages : 0;
         return (
-          <Link key={t.href} href={t.href} className={`bottom-nav-link ${active ? "active" : ""}`} aria-current={active ? "page" : undefined}>
+          <Link
+            key={t.href}
+            href={t.href}
+            className={`bottom-nav-link ${active ? "active" : ""}`}
+            aria-current={active ? "page" : undefined}
+          >
             <span className="bottom-nav-icon">
-              <i className={`bi ${t.icon}${active ? "-fill" : ""}`} aria-hidden="true" />
-              {badge > 0 && <span className="bottom-nav-badge" aria-label={`${badge} unread`}>{formatBadge(badge)}</span>}
+              <i
+                className={`bi ${t.icon}${active ? "-fill" : ""}`}
+                aria-hidden="true"
+              />
+              {badge > 0 && (
+                <span
+                  className="bottom-nav-badge"
+                  aria-label={`${badge} unread`}
+                >
+                  {formatBadge(badge)}
+                </span>
+              )}
             </span>
             <span>{t.label}</span>
           </Link>

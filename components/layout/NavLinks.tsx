@@ -14,7 +14,12 @@ export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
           const active = isActivePath(pathname, item.href);
           return (
             <li key={item.href}>
-              <Link href={item.href} className={`nav-link-js ${active ? "active" : ""}`} aria-current={active ? "page" : undefined} onClick={onNavigate}>
+              <Link
+                href={item.href}
+                className={`nav-link-js ${active ? "active" : ""}`}
+                aria-current={active ? "page" : undefined}
+                onClick={onNavigate}
+              >
                 <i className={`bi ${item.icon}`} aria-hidden="true" />
                 <span>{item.label}</span>
               </Link>

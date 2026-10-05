@@ -1,5 +1,19 @@
-export function Skeleton({ height = 16, width = "100%", className = "" }: { height?: number; width?: string; className?: string }) {
-  return <div className={`skeleton ${className}`} style={{ height, width }} aria-hidden="true" />;
+export function Skeleton({
+  height = 16,
+  width = "100%",
+  className = "",
+}: {
+  height?: number;
+  width?: string;
+  className?: string;
+}) {
+  return (
+    <div
+      className={`skeleton ${className}`}
+      style={{ height, width }}
+      aria-hidden="true"
+    />
+  );
 }
 
 export function CardSkeleton() {
@@ -19,7 +33,9 @@ export function PageSkeleton() {
       <Skeleton height={34} width="40%" className="mb-2" />
       <Skeleton height={16} width="25%" className="mb-4" />
       <div className="d-grid gap-3">
-        <CardSkeleton /><CardSkeleton /><CardSkeleton />
+        <CardSkeleton />
+        <CardSkeleton />
+        <CardSkeleton />
       </div>
     </div>
   );

@@ -7,7 +7,11 @@ import { MESSAGE_MAX_LENGTH } from "@/lib/messaging/constants";
  * Auto-growing message box. Desktop: Enter sends, Shift+Enter adds a line.
  * Touch devices: Enter adds a line (people expect that on a phone keyboard) and the Send button sends.
  */
-export function MessageComposer({ onSend }: { onSend: (text: string) => void }) {
+export function MessageComposer({
+  onSend,
+}: {
+  onSend: (text: string) => void;
+}) {
   const inputId = useId();
   const ref = useRef<HTMLTextAreaElement>(null);
   const [value, setValue] = useState("");
@@ -38,9 +42,18 @@ export function MessageComposer({ onSend }: { onSend: (text: string) => void }) 
 
   return (
     <div className="chat-composer">
-      {nearLimit && <p className={`chat-count small mb-1 ${tooLong ? "text-danger" : "text-muted"}`} role="status">{value.length}/{MESSAGE_MAX_LENGTH}</p>}
+      {nearLimit && (
+        <p
+          className={`chat-count small mb-1 ${tooLong ? "text-danger" : "text-muted"}`}
+          role="status"
+        >
+          {value.length}/{MESSAGE_MAX_LENGTH}
+        </p>
+      )}
       <div className="chat-composer-row">
-        <label htmlFor={inputId} className="visually-hidden">Message</label>
+        <label htmlFor={inputId} className="visually-hidden">
+          Message
+        </label>
         <textarea
           id={inputId}
           ref={ref}
@@ -53,7 +66,13 @@ export function MessageComposer({ onSend }: { onSend: (text: string) => void }) 
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={onKeyDown}
         />
-        <button type="button" className="btn btn-brand chat-send" onClick={submit} disabled={!trimmed || tooLong} aria-label="Send message">
+        <button
+          type="button"
+          className="btn btn-brand chat-send"
+          onClick={submit}
+          disabled={!trimmed || tooLong}
+          aria-label="Send message"
+        >
           <i className="bi bi-send-fill" aria-hidden="true" />
         </button>
       </div>

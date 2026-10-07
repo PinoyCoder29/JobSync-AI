@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { CommentSection } from "./CommentSection";
 import { PersonBadge } from "./PersonBadge";
+import { ReactorsDialog } from "./ReactorsDialog";
 import { REACTION_META, REACTION_ORDER } from "./reactions";
 import { del, postJson } from "@/lib/client/api";
+import { useDismissable } from "@/lib/client/useDismissable";
 import { ARRANGEMENT_LABEL, EMPLOYMENT_LABEL, formatSalaryCompact } from "@/lib/labels";
 import { MAX_POST_LENGTH, REPORT_REASONS, VISIBILITIES } from "@/lib/validations/post";
 import type { PostDTO, SharedPostDTO } from "@/services/social/types";
@@ -53,6 +55,7 @@ export function PostCard({ post: initial, onDeleted, onCreated, standalone }: { 
   const [saved, setSaved] = useState(initial.viewer.saved);
   const [showComments, setShowComments] = useState(Boolean(standalone));
   const [picker, setPicker] = useState(false);
+  const [showReactors, setShowReactors] = useState(false);
   const [menu, setMenu] = useState(false);
   const [panel, setPanel] = useState<null | "share" | "report" | "edit" | "delete">(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -61,18 +64,10 @@ export function PostCard({ post: initial, onDeleted, onCreated, standalone }: { 
   const menuRef = useRef<HTMLDivElement>(null);
   const pickerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!menu && !picker) return;
-    const close = (e: MouseEvent | KeyboardEvent) => {
-      if (e instanceof KeyboardEvent) { if (e.key === "Escape") { setMenu(false); setPicker(false); } return; }
-      const t = e.target as Node;
-      if (!menuRef.current?.contains(t)) setMenu(false);
-      if (!pickerRef.current?.contains(t)) setPicker(false);
-    };
-    document.addEventListener("mousedown", close);
-    document.addEventListener("keydown", close);
-    return () => { document.removeEventListener("mousedown", close); document.removeEventListener("keydown", close); };
-  }, [menu, picker]);
+  const closeMenu = useCallback(() => setMenu(false), []);
+  const closePicker = useCallback(() => setPicker(false), []);
+  useDismissable(menu, menuRef, closeMenu);
+  useDismissable(picker, pickerRef, closePicker);
 
   async function react(type: ReactionType | null) {
     setPicker(false);
@@ -132,7 +127,7 @@ export function PostCard({ post: initial, onDeleted, onCreated, standalone }: { 
                 <button role="menuitem" className="dropdown-item" onClick={() => { setPanel("report"); setMenu(false); }}><i className="bi bi-flag me-2" aria-hidden="true" />Report post</button>
               )}
               <button role="menuitem" className="dropdown-item" onClick={() => { void toggleSave(); setMenu(false); }}><i className={`bi ${saved ? "bi-bookmark-fill" : "bi-bookmark"} me-2`} aria-hidden="true" />{saved ? "Unsave" : "Save"}</button>
-              <Link role="menuitem" className="dropdown-item" href={`/posts/${post.id}`}><i className="bi bi-box-arrow-up-right me-2" aria-hidden="true" />Open post</Link>
+              <Link role="menuitem" className="dropdown-item" href={`/posts/${post.id}`} onClick={() => setMenu(false)}><i className="bi bi-box-arrow-up-right me-2" aria-hidden="true" />Open post</Link>
             </div>
           )}
         </div>
@@ -167,9 +162,9 @@ export function PostCard({ post: initial, onDeleted, onCreated, standalone }: { 
       {(reactionCount > 0 || commentCount > 0 || post.counts.shares > 0) && (
         <div className="post-stats">
           {reactionCount > 0 && (
-            <span aria-label={`${reactionCount} reactions`}>
+            <button type="button" className="link-btn stats-reactions" aria-haspopup="dialog" aria-label={`${reactionCount} ${reactionCount === 1 ? "reaction" : "reactions"}. See who reacted`} onClick={() => setShowReactors(true)}>
               {top.map(([t]) => <span key={t} aria-hidden="true">{REACTION_META[t].emoji}</span>)} {reactionCount}
-            </span>
+            </button>
           )}
           <span className="ms-auto">
             {commentCount > 0 && <button type="button" className="link-btn" onClick={() => setShowComments(true)}>{commentCount} {commentCount === 1 ? "comment" : "comments"}</button>}
@@ -225,6 +220,8 @@ export function PostCard({ post: initial, onDeleted, onCreated, standalone }: { 
         const res = await api_patch(post.id, patch);
         setPost(res); setPanel(null); setNotice("Post updated.");
       })} />}
+
+      {showReactors && <ReactorsDialog postId={post.id} byType={post.counts.byType} total={reactionCount} onClose={() => setShowReactors(false)} />}
 
       {showComments && <CommentSection postId={post.id} onCountChange={(d) => setCommentCount((n) => Math.max(0, n + d))} />}
     </article>

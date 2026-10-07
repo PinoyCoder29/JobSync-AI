@@ -16,6 +16,7 @@ export const sendMessageSchema = z.object({
     // NUL bytes cannot be stored in PostgreSQL text; normalise line endings so the length rule is consistent.
     .transform((v) => v.replace(/\u0000/g, "").replace(/\r\n?/g, "\n").trim())
     .pipe(z.string().min(1, "Write a message first.").max(MESSAGE_MAX_LENGTH, `Keep messages under ${MESSAGE_MAX_LENGTH} characters.`)),
+  replyToId: id.optional(),
   clientId: z.string().trim().min(8).max(64).regex(/^[A-Za-z0-9_-]+$/, "Invalid client id.").optional(),
 });
 export type SendMessageInput = z.infer<typeof sendMessageSchema>;
@@ -24,3 +25,7 @@ export const messagePageQuerySchema = z.object({
   before: z.string().trim().min(1).max(60).optional().catch(undefined),
   limit: z.coerce.number().int().min(1).max(50).catch(30),
 });
+
+export const editMessageSchema = z.object({ content: sendMessageSchema.shape.content });
+export const messageReactionSchema = z.object({ type: z.enum(["LIKE", "CELEBRATE", "SUPPORT", "INSIGHTFUL", "CURIOUS"]).default("LIKE") });
+export const deleteScopeSchema = z.enum(["me", "everyone"]).catch("everyone");

@@ -29,6 +29,9 @@ export const canDeletePost = (userId: string, authorId: string) => userId === au
 export const canDeleteComment = (userId: string, commentAuthorId: string, postAuthorId: string) =>
   userId === commentAuthorId || userId === postAuthorId;
 
+/** Only the author can edit a comment (the post owner may delete it, not rewrite what someone said). */
+export const canEditComment = (userId: string, commentAuthorId: string) => userId === commentAuthorId;
+
 /** Only public posts can be re-shared, so a share can never widen who sees a restricted post. */
 export const canSharePost = (visibility: PostVisibility) => visibility === "PUBLIC";
 

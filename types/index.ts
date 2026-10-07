@@ -4,6 +4,10 @@ export type ActionState = {
   ok?: boolean;
   message?: string;
   errors?: Record<string, string[] | undefined>;
+  /** Machine-readable reason (e.g. "EXPIRED") so the UI can show a specific state. */
+  code?: string;
+  /** ms timestamp when a resend becomes available (OTP screen). */
+  resendAt?: number;
 };
 
 export type JobListItem = JobWithSkills & {

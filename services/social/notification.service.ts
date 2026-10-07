@@ -25,7 +25,7 @@ const PREFERENCE: Record<NotificationType, PrefKey> = {
 /** Noisy, repeatable actions only notify once until the previous one is read. A MESSAGE is deduped per conversation, so a burst of messages is one notification. */
 const DEDUPED: ReadonlySet<NotificationType> = new Set(["POST_REACTION", "FOLLOWED", "CONNECTION_REQUEST", "MESSAGE"]);
 
-const TEXT: Record<NotificationType, string> = {
+export const NOTIFICATION_TEXT: Record<NotificationType, string> = {
   CONNECTION_REQUEST: "sent you a connection request",
   CONNECTION_ACCEPTED: "accepted your connection request",
   FOLLOWED: "started following you",
@@ -60,7 +60,7 @@ function toDTO(n: NotificationRecord): NotificationDTO {
   return {
     id: n.id,
     type: n.type,
-    text: systemMessage ? TEXT[n.type] : `${name} ${TEXT[n.type]}`,
+    text: systemMessage ? NOTIFICATION_TEXT[n.type] : `${name} ${NOTIFICATION_TEXT[n.type]}`,
     href: notificationHref({ type: n.type, postId: n.postId, jobId: n.jobId, actorId: n.actor?.id ?? null, conversationId: n.conversationId }),
     actor: n.actor ? { id: n.actor.id, name, avatarUrl: avatar ? getOptimizedUrl(avatar, "avatarSm") : n.actor.image ?? null } : null,
     read: n.readAt !== null,

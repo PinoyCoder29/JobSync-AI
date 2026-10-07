@@ -17,6 +17,13 @@ export const userRepository = {
       select: { id: true, name: true, email: true },
     });
   },
+  /** Heartbeat write, throttled IN the query: at most one UPDATE per user per 30s no matter how many tabs/requests. */
+  touchLastSeen(id: string) {
+    return prisma.user.updateMany({ where: { id, OR: [{ lastSeenAt: null }, { lastSeenAt: { lt: new Date(Date.now() - 30_000) } }] }, data: { lastSeenAt: new Date() } });
+  },
+  presenceRows(ids: string[]) {
+    return prisma.user.findMany({ where: { id: { in: ids } }, select: { id: true, lastSeenAt: true, profile: { select: { showOnlineStatus: true } } } });
+  },
   ensureProfile(userId: string) {
     return prisma.profile.upsert({ where: { userId }, create: { userId }, update: {}, select: { id: true } });
   },

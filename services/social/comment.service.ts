@@ -1,6 +1,6 @@
 import type { ReactionType } from "@prisma/client";
 import { AppError } from "@/lib/errors";
-import { canDeleteComment, validReplyParent } from "@/lib/permissions/post";
+import { canDeleteComment, canEditComment, validReplyParent } from "@/lib/permissions/post";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import { commentRepository } from "@/repositories/comment.repository";
 import { blockRepository } from "@/repositories/networking.repository";
@@ -53,6 +53,17 @@ export const commentService = {
     }
     const lookup = await relationshipLookup(userId, [userId]);
     return toCommentDTO(created, userId, post.authorId, lookup);
+  },
+
+  async edit(userId: string, commentId: string, content: string): Promise<CommentDTO> {
+    const comment = await commentRepository.findById(commentId);
+    // not yours = not found, same as everywhere else in this app
+    if (!comment || !canEditComment(userId, comment.authorId)) throw new AppError(NOT_FOUND, "NOT_FOUND");
+    await requireViewablePost(userId, comment.postId);
+    enforceRateLimit(userId, "comment");
+    const updated = await commentRepository.edit(commentId, userId, content, userId);
+    if (!updated) throw new AppError(NOT_FOUND, "NOT_FOUND");
+    return toCommentDTO(updated, userId, comment.post.authorId, await relationshipLookup(userId, [userId]));
   },
 
   async delete(userId: string, commentId: string): Promise<void> {

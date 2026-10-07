@@ -88,10 +88,11 @@ export function toCommentDTO(c: CommentRecord, viewerId: string | null, postAuth
     parentId: c.parentId,
     content: c.content,
     createdAt: c.createdAt.toISOString(),
+    editedAt: c.editedAt?.toISOString() ?? null,
     author: toAuthor(c.author, relationshipOf(c.authorId)),
     reactionCount: c._count.reactions,
     replyCount: c._count.replies,
-    viewer: { reaction: c.reactions[0]?.type ?? null, canDelete: viewerId !== null && (viewerId === c.authorId || viewerId === postAuthorId) },
+    viewer: { reaction: c.reactions[0]?.type ?? null, canDelete: viewerId !== null && (viewerId === c.authorId || viewerId === postAuthorId), canEdit: viewerId !== null && viewerId === c.authorId },
     replies: [],
   };
 }

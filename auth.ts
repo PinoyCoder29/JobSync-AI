@@ -9,6 +9,7 @@ import { prisma } from "@/lib/prisma";
 import { isOAuthConfigured, OAUTH_PROVIDERS } from "@/lib/oauth-providers";
 import { loginSchema } from "@/lib/validations/auth";
 import { userRepository } from "@/repositories/user.repository";
+import { readSignupTicket } from "@/lib/auth/signup-ticket";
 import { userService } from "@/services/user.service";
 import authConfig from "./auth.config";
 
@@ -23,6 +24,17 @@ const providers: Provider[] = [
       const parsed = loginSchema.safeParse(raw);
       if (!parsed.success) return null;
       return userService.verifyCredentials(parsed.data.email, parsed.data.password);
+    },
+  }),
+  // Used ONLY right after email verification succeeds: accepts a short-lived ticket signed by the server, never a password.
+  Credentials({
+    id: "signup-ticket",
+    credentials: { ticket: {} },
+    async authorize(raw) {
+      const userId = readSignupTicket((raw as { ticket?: unknown })?.ticket);
+      if (!userId) return null;
+      const user = await userService.getAccount(userId);
+      return user ? { id: user.id, name: user.name, email: user.email } : null;
     },
   }),
 ];

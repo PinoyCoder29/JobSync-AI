@@ -6,7 +6,9 @@ import { MobileNav } from "./MobileNav";
 import { TopNav } from "./TopNav";
 import { notificationService } from "@/services/social/notification.service";
 import { messagingService } from "@/services/messaging/messaging.service";
+import { DismissibleDetails } from "@/components/ui/DismissibleDetails";
 import { MobileBell } from "./MobileBell";
+import { PresenceHeartbeat } from "./PresenceHeartbeat";
 import { UnreadCountsProvider } from "./UnreadCounts";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { Avatar } from "@/components/ui/Avatar";
@@ -26,6 +28,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <UnreadCountsProvider initial={{ notifications, messages }}>
+      {user && <PresenceHeartbeat />}
     <div className="app-shell">
       {/* Skip to content */}
       <a href="#main" className="skip-link">
@@ -80,39 +83,28 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
 
           {/* Account */}
           {user ? (
-            <details className="user-menu">
-              <summary>
-                {images?.avatarSmUrl ? (
-                  <Avatar name={user.name ?? user.email ?? "U"} src={images.avatarSmUrl} size={32} />
-                ) : (
-                  <span className="avatar" aria-hidden="true">
-                    {(user.name ?? user.email ?? "U").charAt(0).toUpperCase()}
-                  </span>
-                )}
-
-                <span className="d-none d-sm-inline">
-                  {user.name ?? user.email}
-                </span>
-              </summary>
-
+            <DismissibleDetails
+              className="user-menu"
+              summary={
+                <>
+                  {images?.avatarSmUrl ? (
+                    <Avatar name={user.name ?? user.email ?? "U"} src={images.avatarSmUrl} size={32} />
+                  ) : (
+                    <Avatar name={user.name ?? user.email ?? "U"} size={32} />
+                  )}
+                  <span className="d-none d-sm-inline">{user.name ?? user.email}</span>
+                </>
+              }
+            >
               <div className="user-menu-panel">
-                <div className="small text-muted px-3 pt-2">{user.email}</div>
-
-                <Link href="/profile" className="dropdown-item">
-                  Profile
-                </Link>
-
-                <Link href="/settings" className="dropdown-item">
-                  Settings
-                </Link>
-
+                <div className="small text-muted px-3 pt-2 text-break">{user.email}</div>
+                <Link href="/profile" className="dropdown-item">Profile</Link>
+                <Link href="/settings" className="dropdown-item">Settings</Link>
                 <form action={logoutAction}>
-                  <button type="submit" className="dropdown-item">
-                    Log out
-                  </button>
+                  <button type="submit" className="dropdown-item">Log out</button>
                 </form>
               </div>
-            </details>
+            </DismissibleDetails>
           ) : (
             <>
               <Link href="/login" className="btn btn-outline-brand btn-sm">

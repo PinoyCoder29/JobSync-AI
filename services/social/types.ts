@@ -62,12 +62,15 @@ export type CommentDTO = {
   parentId: string | null;
   content: string;
   createdAt: string;
+  editedAt: string | null;
   author: AuthorDTO;
   reactionCount: number;
   replyCount: number;
-  viewer: { reaction: ReactionType | null; canDelete: boolean };
+  viewer: { reaction: ReactionType | null; canDelete: boolean; canEdit: boolean };
   replies: CommentDTO[];
 };
+
+export type ReactorDTO = { id: string; type: ReactionType; person: AuthorDTO };
 
 export type InsightDTO = { title: string; text: string; href: string | null; cta: string | null };
 

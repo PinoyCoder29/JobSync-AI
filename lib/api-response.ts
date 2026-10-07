@@ -28,7 +28,8 @@ export function fail(code: ApiErrorCode, message: string, headers?: HeadersInit)
 
 /** Turns any thrown value into a safe response. Technical details are logged, never returned. */
 export function handleApiError(error: unknown): Response {
-  if (error instanceof AppError) return fail(error.code, error.message);
+  // OTP-specific codes are for server actions/UI states; over HTTP they are plain validation failures.
+  if (error instanceof AppError) return fail(error.code === "EXPIRED" || error.code === "LOCKED" || error.code === "INVALID_CODE" ? "VALIDATION" : error.code, error.message);
   console.error(error);
   return fail("INTERNAL", "Something went wrong on our side. Please try again.");
 }

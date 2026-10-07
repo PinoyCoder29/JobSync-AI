@@ -78,7 +78,7 @@ describe("rate limits", () => {
 });
 
 const msg = (id: string, createdAt: string, extra: Partial<LocalMessage> = {}): LocalMessage => ({
-  id, conversationId: "c", senderId: "x", mine: false, content: id, createdAt, readAt: null, deleted: false, clientId: null, ...extra,
+  id, conversationId: "c", senderId: "x", mine: false, content: id, createdAt, editedAt: null, replyTo: null, reactions: [], readAt: null, deleted: false, clientId: null, ...extra,
 });
 
 describe("thread merging", () => {
@@ -134,5 +134,76 @@ describe("message notifications", () => {
   it("open the right conversation", () => {
     assert.equal(notificationHref({ type: "MESSAGE", postId: null, jobId: null, actorId: "u", conversationId: "conv1" }), "/messages/conv1");
     assert.equal(notificationHref({ type: "MESSAGE", postId: null, jobId: null, actorId: "u" }), "/messages");
+  });
+});
+
+// ───────── v2: reactions, menu rules, presence, notification privacy ─────────
+import { applyMyReaction, messageActions } from "@/lib/messaging/thread";
+import { presenceLabel, toPresence } from "@/lib/presence";
+import { deleteScopeSchema, editMessageSchema } from "@/lib/validations/message";
+
+describe("message reactions (optimistic)", () => {
+  it("adds, switches and removes my single reaction", () => {
+    let r = applyMyReaction([], "LIKE");
+    assert.deepEqual(r, [{ type: "LIKE", count: 1, mine: true }]);
+    r = applyMyReaction(r, "CELEBRATE");
+    assert.deepEqual(r, [{ type: "CELEBRATE", count: 1, mine: true }]);
+    assert.deepEqual(applyMyReaction(r, null), []);
+  });
+  it("keeps other people's reactions", () => {
+    const r = applyMyReaction([{ type: "LIKE", count: 2, mine: true }], null);
+    assert.deepEqual(r, [{ type: "LIKE", count: 1, mine: false }]);
+  });
+});
+
+describe("message menu shows only valid actions", () => {
+  it("own message: everything", () => assert.deepEqual(messageActions({ mine: true, deleted: false }), { react: true, reply: true, copy: true, edit: true, deleteForMe: true, deleteForEveryone: true }));
+  it("someone else's message: no edit, no delete-for-everyone", () => {
+    const a = messageActions({ mine: false, deleted: false });
+    assert.equal(a.edit, false);
+    assert.equal(a.deleteForEveryone, false);
+    assert.equal(a.deleteForMe, true);
+  });
+  it("deleted message: only delete-for-me", () => {
+    const a = messageActions({ mine: true, deleted: true });
+    assert.deepEqual(Object.entries(a).filter(([, v]) => v).map(([k]) => k), ["deleteForMe"]);
+  });
+  it("unsent message: nothing", () => assert.equal(Object.values(messageActions({ mine: true, deleted: false, status: "sending" })).some(Boolean), false));
+});
+
+describe("message validation", () => {
+  it("edit rejects empty content", () => assert.equal(editMessageSchema.safeParse({ content: "  " }).success, false));
+  it("delete scope defaults to everyone only for garbage, accepts me", () => {
+    assert.equal(deleteScopeSchema.parse("me"), "me");
+    assert.equal(deleteScopeSchema.parse("whatever"), "everyone");
+  });
+});
+
+describe("presence privacy", () => {
+  const now = Date.now();
+  const seen = (msAgo: number) => new Date(now - msAgo);
+  it("online within 2 minutes, then last-active", () => {
+    const on = toPresence({ viewerShares: true, targetShares: true, lastSeenAt: seen(30_000) }, now);
+    assert.equal(presenceLabel(on, "precise", now), "Online");
+    const off = toPresence({ viewerShares: true, targetShares: true, lastSeenAt: seen(8 * 60_000) }, now);
+    assert.equal(presenceLabel(off, "precise", now), "Last active 8m ago");
+  });
+  it("hidden if EITHER side turned the switch off", () => {
+    assert.equal(toPresence({ viewerShares: false, targetShares: true, lastSeenAt: seen(1000) }, now).visible, false);
+    assert.equal(toPresence({ viewerShares: true, targetShares: false, lastSeenAt: seen(1000) }, now).visible, false);
+  });
+  it("hidden when never seen", () => assert.equal(toPresence({ viewerShares: true, targetShares: true, lastSeenAt: null }, now).visible, false));
+  it("profile wording is coarse and stops after a day", () => {
+    const recent = toPresence({ viewerShares: true, targetShares: true, lastSeenAt: seen(3 * 3_600_000) }, now);
+    assert.equal(presenceLabel(recent, "coarse", now), "Last active recently");
+    const old = toPresence({ viewerShares: true, targetShares: true, lastSeenAt: seen(3 * 86_400_000) }, now);
+    assert.equal(presenceLabel(old, "coarse", now), null);
+  });
+});
+
+describe("notifications never contain message content", () => {
+  it("the MESSAGE notification text is fixed", async () => {
+    const { NOTIFICATION_TEXT } = await import("@/services/social/notification.service");
+    assert.equal(NOTIFICATION_TEXT.MESSAGE, "sent you a message");
   });
 });

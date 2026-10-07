@@ -25,6 +25,16 @@ export const RATE_RULES = {
   startConversation: { limit: 30, windowMs: 60 * 60_000, label: "new conversations" },
   sendMessage: { limit: 600, windowMs: 60 * 60_000, label: "messages" },
   sendMessageBurst: { limit: 20, windowMs: 60_000, label: "messages" },
+  // Sign-up / OTP. Durable limits (attempts, cooldown, send count) also live in the PendingSignup row.
+  signupStartIp: { limit: 10, windowMs: 60 * 60_000, label: "sign-up attempts" },
+  signupStartEmail: { limit: 5, windowMs: 60 * 60_000, label: "sign-up attempts for this email" },
+  otpSend: { limit: 6, windowMs: 60 * 60_000, label: "verification emails" },
+  otpVerify: { limit: 15, windowMs: 15 * 60_000, label: "verification attempts" },
+  presence: { limit: 900, windowMs: 60 * 60_000, label: "presence updates" },
+  messageEdit: { limit: 120, windowMs: 60 * 60_000, label: "message edits" },
+  assistantChat: { limit: 40, windowMs: 60 * 60_000, label: "AI assistant questions" },
+  interviewTurn: { limit: 120, windowMs: 60 * 60_000, label: "interview answers" },
+  interviewStart: { limit: 15, windowMs: 60 * 60_000, label: "interviews" },
 } as const satisfies Record<string, RateRule>;
 
 const buckets = new Map<string, number[]>();

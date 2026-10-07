@@ -39,6 +39,7 @@ export default async function SettingsPage() {
           notifyComments: profile?.notifyComments ?? true,
           notifyConnections: profile?.notifyConnections ?? true,
           notifyMessages: profile?.notifyMessages ?? true,
+          showOnlineStatus: profile?.showOnlineStatus ?? true,
           profileVisible: profile?.profileVisible ?? true,
           visibility: profile?.visibility ?? "PUBLIC",
         }} />

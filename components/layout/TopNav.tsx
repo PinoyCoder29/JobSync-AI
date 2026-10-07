@@ -9,6 +9,7 @@ import {
   isActivePath,
   type NavItem,
 } from "./nav";
+import { DismissibleDetails } from "@/components/ui/DismissibleDetails";
 import { formatBadge, useUnreadCounts } from "./UnreadCounts";
 
 function Item({
@@ -71,13 +72,16 @@ export function TopNav() {
         item={{ href: "/profile", label: "Profile", icon: "bi-person" }}
         pathname={pathname}
       />
-      <details className="topnav-more">
-        <summary className={`topnav-link ${moreActive ? "active" : ""}`}>
-          <span className="topnav-icon">
-            <i className="bi bi-three-dots" aria-hidden="true" />
-          </span>
-          <span className="topnav-label">More</span>
-        </summary>
+      <DismissibleDetails
+        className="topnav-more"
+        summaryClassName={`topnav-link ${moreActive ? "active" : ""}`}
+        summary={
+          <>
+            <span className="topnav-icon"><i className="bi bi-three-dots" aria-hidden="true" /></span>
+            <span className="topnav-label">More</span>
+          </>
+        }
+      >
         <div className="topnav-more-panel">
           {MORE_NAV.map((i) => (
             <Link key={i.href} href={i.href} className="dropdown-item">
@@ -86,7 +90,7 @@ export function TopNav() {
             </Link>
           ))}
         </div>
-      </details>
+      </DismissibleDetails>
     </nav>
   );
 }

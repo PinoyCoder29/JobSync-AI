@@ -201,6 +201,10 @@ model User {
   jobAlerts           JobAlert[]
   conversationParticipations ConversationParticipant[]
   messagesSent        Message[]
+  messageReactions    MessageReaction[]
+  messagesHidden      MessageHidden[]
+  // Presence: refreshed by a throttled heartbeat while the app is open. Shown only if the user allows it (Profile.showOnlineStatus).
+  lastSeenAt          DateTime?
 }
 
 model Account {
@@ -266,6 +270,8 @@ model Profile {
   notifyConnections        Boolean          @default(true)
   notifyMessages           Boolean          @default(true)
   profileVisible           Boolean          @default(true)
+  // Presence privacy: when false, nobody sees this user's online/last-active status (and they don't see others').
+  showOnlineStatus         Boolean          @default(true)
   // Network privacy. `profileVisible = false` is still honoured and always means PRIVATE.
   visibility               ProfileVisibility @default(PUBLIC)
   avatarMediaId            String?
@@ -533,6 +539,13 @@ model InterviewSession {
   difficulty  Difficulty
   status      InterviewStatus     @default(IN_PROGRESS)
   score       Int?
+  // CLASSIC = fixed question set (original). LIVE = AI interviewer that adapts to each answer.
+  mode        String              @default("CLASSIC")
+  focus       String?             // e.g. "Frontend Developer"
+  jobId       String?
+  jobDescription String?          @db.Text
+  maxQuestions Int                @default(0)
+  report      Json?               // final structured evaluation (LIVE)
   createdAt   DateTime            @default(now())
   completedAt DateTime?
   user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -548,6 +561,7 @@ model InterviewQuestion {
   hint             String?
   expectedKeywords String[]
   sortOrder        Int               @default(0)
+  isFollowUp       Boolean           @default(false)
   session          InterviewSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   answer           InterviewAnswer?
 
@@ -560,6 +574,7 @@ model InterviewAnswer {
   answer     String            @db.Text
   score      Int
   feedback   String            @db.Text
+  details    Json?             // LIVE: per-skill scores for this answer
   createdAt  DateTime          @default(now())
   question   InterviewQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
 }
@@ -779,6 +794,7 @@ model Comment {
   content   String            @db.Text
   createdAt DateTime          @default(now())
   updatedAt DateTime          @updatedAt
+  editedAt  DateTime?
   post      Post              @relation(fields: [postId], references: [id], onDelete: Cascade)
   author    User              @relation(fields: [authorId], references: [id], onDelete: Cascade)
   parent    Comment?          @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
@@ -903,12 +919,67 @@ model Message {
   readAt         DateTime?
   // Soft delete: the row stays so the timeline keeps its shape, but `content` is blanked.
   deletedAt      DateTime?
+  // Set each time the sender edits the text.
+  editedAt       DateTime?
+  replyToId      String?
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   sender         User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  replyTo        Message?     @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies        Message[]    @relation("MessageReplies")
+  reactions      MessageReaction[]
+  hiddenFor      MessageHidden[]
 
   @@unique([senderId, clientId])
   @@index([conversationId, createdAt, id])
   @@index([conversationId, senderId, readAt])
+}
+
+// One reaction per user per message (same ReactionType set as posts/comments).
+model MessageReaction {
+  id        String       @id @default(cuid())
+  messageId String
+  userId    String
+  type      ReactionType @default(LIKE)
+  createdAt DateTime     @default(now())
+  message   Message      @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+  @@index([messageId])
+}
+
+// "Delete for me": a per-user hide. The message row is untouched, so the other person still sees it.
+model MessageHidden {
+  id        String   @id @default(cuid())
+  messageId String
+  userId    String
+  createdAt DateTime @default(now())
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+  @@index([userId])
+}
+
+// ───────── Email sign-up verification ─────────
+// A password sign-up lives HERE until the emailed code is confirmed; only then is a real User created.
+// So an unverified email can never sign in, and existing accounts are unaffected.
+model PendingSignup {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String
+  passwordHash  String
+  // HMAC of the 6-digit code (never the code itself)
+  codeHash      String
+  codeExpiresAt DateTime
+  attempts      Int      @default(0)
+  lastSentAt    DateTime @default(now())
+  sendCount     Int      @default(1)
+  createdAt     DateTime @default(now())
+  // The whole pending record is purged after this, even if the code was never used.
+  expiresAt     DateTime
+
+  @@index([expiresAt])
 }
 
 // ───────── Featured content (admin-ready; algorithmic fallback lives in the service) ─────────

@@ -63,3 +63,58 @@ will error because the code selects the new columns.
 - No message attachments yet (`MediaKind.MESSAGE` and the Cloudinary folder exist for it).
 - The inbox shows the 50 most recent conversations.
 - Rate limiting is in memory (see lib/rate-limit): per server instance.
+
+# Update 2: OTP sign-up, comments/reactions, Messenger actions, presence, AI workspace, AI interviewer
+
+## Apply (database FIRST)
+```bash
+npm install                 # adds nodemailer
+npx prisma validate
+npx prisma db push          # additive only; no reset, nothing dropped
+npx prisma generate
+npm test
+```
+Adds: `PendingSignup`, `MessageReaction`, `MessageHidden`; columns `Comment.editedAt`, `Message.editedAt/replyToId`,
+`User.lastSeenAt`, `Profile.showOnlineStatus`, `InterviewSession.mode/focus/jobId/jobDescription/maxQuestions/report`,
+`InterviewQuestion.isFollowUp`, `InterviewAnswer.details`. Existing rows get safe defaults.
+
+## Environment (server-side only, never NEXT_PUBLIC_)
+```env
+EMAIL_USER="you@gmail.com"
+EMAIL_APP_PASSWORD="16-char Google App Password"   # Google Account > Security > 2-Step Verification > App passwords
+GEMINI_API_KEY="..."                               # already used by the analyzers; also powers the assistant + interviewer
+```
+Without `GEMINI_API_KEY` the assistant and interviewer fall back to a clearly-labelled demo mode (heuristic, built-in question bank).
+
+## Email OTP sign-up
+`/register` -> PendingSignup row + emailed 6-digit code -> `/verify-email` -> User created with `emailVerified` -> signed in.
+No User exists until the code is confirmed, so an unverified email can never log in, and **existing accounts are untouched**.
+Code: `crypto.randomInt`, stored only as an HMAC (keyed with AUTH_SECRET, bound to the email), 5-minute expiry, 5 attempts
+(atomic counter), 60s resend cooldown, max 5 sends, one-time use (row deleted on success), plus per-IP/per-email rate limits.
+Social logins (Google/GitHub/Facebook) skip OTP: the provider already verified the address.
+
+## Default avatar
+`Avatar` renders deterministic initials on a name-derived colour (no stored image, no fake face); a Cloudinary photo replaces it.
+
+## Messenger
+React / reply / copy / edit / delete-for-me / delete-for-everyone from a per-message menu (only valid actions shown).
+Delete-for-me = `MessageHidden` row (other person unaffected). Delete-for-everyone = sender only, content erased, placeholder stays.
+Notifications stay generic ("X sent you a message"); content never enters the notification table.
+
+## Presence
+Heartbeat every 45s (visible tab) updates `User.lastSeenAt` (write throttled to 1/30s in SQL). Online = seen < 2 min.
+Privacy: **reciprocal** - turn off "Show my online status" in Settings and you neither show nor see status. Profile page uses coarse wording
+("Last active recently", nothing after 24h); Messenger shows "Last active 8m ago". Transport is polling; the DTO/privacy layer is
+transport-agnostic so SSE/WebSocket can replace the heartbeat later.
+
+## AI interviewer
+`/interview/live`: pick type (HR, Behavioral, Technical, Situational, Frontend, Backend, Full Stack, Custom Job), optional job/description.
+Server asks Gemini for the next question/follow-up per answer (schema-validated, answers framed as untrusted data), stores Q/A in the existing
+interview tables, final scores = plain averages of per-answer scores. Voice = browser Web Speech API (TTS + hold-to-talk STT); only the **text
+transcript** reaches the server. Chrome/Edge/Safari support recognition; Firefox users type.
+
+## Honest limits
+- Tested here: 136 unit tests, typecheck, and the new screens in headless Chromium at 320-1440px (interactive, zero JS errors).
+  NOT tested here: real Gmail delivery, real Gemini output quality, the database (Prisma engines are blocked in this sandbox), real microphones.
+- Rate limiter is in-memory per server instance (OTP attempts/cooldown/send-count are durable in the database).
+- Message edit/delete-for-everyone have no time limit. No message-reaction notifications. No report-message feature.

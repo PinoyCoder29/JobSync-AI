@@ -63,6 +63,8 @@ export const commentSchema = z.object({
   parentId: id.optional(),
 });
 
+export const commentEditSchema = z.object({ content: commentSchema.shape.content });
+
 export const shareSchema = z.object({
   content: optionalText(MAX_POST_LENGTH),
   visibility: z.enum(VISIBILITIES).default("PUBLIC"),

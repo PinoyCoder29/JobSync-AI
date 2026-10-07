@@ -1,12 +1,15 @@
 /**
  * Pure helpers for the chat thread. No React, no server imports: used by the UI and covered by unit tests.
  */
-import type { MessageDTO } from "@/services/messaging/types";
+import type { ReactionType } from "@prisma/client";
+import type { MessageDTO, MessageReactionDTO } from "@/services/messaging/types";
 
 export type LocalMessage = MessageDTO & {
   /** Only on messages that exist in this browser but are not confirmed by the server yet. */
   status?: "sending" | "failed";
   error?: string;
+  /** Only on local pending messages: lets a failed reply be retried. */
+  replyToId?: string;
 };
 
 const byTime = (a: MessageDTO, b: MessageDTO) => (a.createdAt === b.createdAt ? (a.id < b.id ? -1 : 1) : a.createdAt < b.createdAt ? -1 : 1);
@@ -74,3 +77,24 @@ export const clockTime = (iso: string) => new Date(iso).toLocaleTimeString("en-P
 
 /** Total unread across a conversation list. */
 export const totalUnread = (list: { unread: number }[]) => list.reduce((n, c) => n + c.unread, 0);
+
+/** Optimistic UI: what the reaction chips look like after YOU react (or remove yours with null). One reaction per person. */
+export function applyMyReaction(reactions: MessageReactionDTO[], type: ReactionType | null): MessageReactionDTO[] {
+  const without = reactions.map((r) => (r.mine ? { ...r, count: r.count - 1, mine: false } : r)).filter((r) => r.count > 0);
+  if (!type) return without;
+  const existing = without.find((r) => r.type === type);
+  return existing ? without.map((r) => (r === existing ? { ...r, count: r.count + 1, mine: true } : r)) : [...without, { type, count: 1, mine: true }];
+}
+
+/** Which actions the message menu offers. Invalid actions are not shown at all. */
+export function messageActions(m: { mine: boolean; deleted: boolean; status?: "sending" | "failed" }) {
+  if (m.status) return { react: false, reply: false, copy: false, edit: false, deleteForMe: false, deleteForEveryone: false };
+  return {
+    react: !m.deleted,
+    reply: !m.deleted,
+    copy: !m.deleted,
+    edit: m.mine && !m.deleted,
+    deleteForMe: true,
+    deleteForEveryone: m.mine && !m.deleted,
+  };
+}

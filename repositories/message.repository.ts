@@ -1,20 +1,30 @@
-import { Prisma } from "@prisma/client";
+import { Prisma, type ReactionType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { pairKeyFor } from "@/lib/permissions/network";
 import { PERSON_SELECT } from "./networking.repository";
 
-const MESSAGE_SELECT = {
-  id: true,
-  conversationId: true,
-  senderId: true,
-  content: true,
-  clientId: true,
-  createdAt: true,
-  readAt: true,
-  deletedAt: true,
-} satisfies Prisma.MessageSelect;
+/** What a viewer may see of a message. `hiddenFor` is filtered per viewer ("delete for me"), see notHiddenFor(). */
+const messageSelect = (viewerId: string) =>
+  ({
+    id: true,
+    conversationId: true,
+    senderId: true,
+    content: true,
+    clientId: true,
+    createdAt: true,
+    editedAt: true,
+    readAt: true,
+    deletedAt: true,
+    replyTo: { select: { id: true, content: true, senderId: true, deletedAt: true } },
+    reactions: { select: { userId: true, type: true } },
+    // not selected for display; present so the type stays honest about the per-viewer filter
+    hiddenFor: { where: { userId: viewerId }, select: { id: true }, take: 1 },
+  }) satisfies Prisma.MessageSelect;
 
-export type MessageRecord = Prisma.MessageGetPayload<{ select: typeof MESSAGE_SELECT }>;
+export type MessageRecord = Prisma.MessageGetPayload<{ select: ReturnType<typeof messageSelect> }>;
+
+/** "Delete for me" is a row in MessageHidden. These hide it from ONE person without touching the message. */
+const notHiddenFor = (userId: string): Prisma.MessageWhereInput => ({ hiddenFor: { none: { userId } } });
 
 const PARTICIPANTS = { select: { userId: true, user: { select: PERSON_SELECT } } } satisfies { select: Prisma.ConversationParticipantSelect };
 
@@ -26,8 +36,8 @@ const CONVERSATION_SELECT = {
 
 export type ConversationRecord = Prisma.ConversationGetPayload<{ select: typeof CONVERSATION_SELECT }>;
 
-/** Messages the user has not opened yet: written by someone else, still unread, not deleted. */
-const unreadWhere = (userId: string): Prisma.MessageWhereInput => ({ senderId: { not: userId }, readAt: null, deletedAt: null });
+/** Messages the user has not opened yet: written by someone else, still unread, not deleted, not hidden by them. */
+const unreadWhere = (userId: string): Prisma.MessageWhereInput => ({ senderId: { not: userId }, readAt: null, deletedAt: null, ...notHiddenFor(userId) });
 
 export const conversationRepository = {
   findByPairKey(a: string, b: string) {
@@ -39,10 +49,7 @@ export const conversationRepository = {
     return prisma.conversation.findFirst({ where: { id: conversationId, participants: { some: { userId } } }, select: CONVERSATION_SELECT });
   },
 
-  /**
-   * One conversation per pair. The unique pairKey makes this race-safe: if two requests create it at the same time,
-   * the loser hits the unique constraint and simply reads the winner's row.
-   */
+  /** One conversation per pair. The unique pairKey makes this race-safe. */
   async findOrCreate(a: string, b: string): Promise<{ id: string }> {
     const pairKey = pairKeyFor(a, b);
     const existing = await prisma.conversation.findUnique({ where: { pairKey }, select: { id: true } });
@@ -58,7 +65,7 @@ export const conversationRepository = {
     }
   },
 
-  /** Conversations with at least one message, newest activity first. People who are blocked (either way) are excluded. */
+  /** Conversations with at least one message, newest activity first. Blocked people are excluded. */
   async listForUser(userId: string, hiddenUserIds: string[], take: number) {
     return prisma.conversation.findMany({
       where: {
@@ -70,14 +77,11 @@ export const conversationRepository = {
       take,
       select: {
         ...CONVERSATION_SELECT,
-        messages: { orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: 1, select: MESSAGE_SELECT },
+        // the preview skips messages the viewer deleted "for me"
+        messages: { where: notHiddenFor(userId), orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: 1, select: messageSelect(userId) },
         _count: { select: { messages: { where: unreadWhere(userId) } } },
       },
     });
-  },
-
-  async unreadFor(conversationId: string, userId: string) {
-    return prisma.message.count({ where: { conversationId, ...unreadWhere(userId) } });
   },
 };
 
@@ -85,27 +89,37 @@ export type ConversationListRecord = Awaited<ReturnType<typeof conversationRepos
 
 export const messageRepository = {
   findByClientId(senderId: string, clientId: string) {
-    return prisma.message.findUnique({ where: { senderId_clientId: { senderId, clientId } }, select: MESSAGE_SELECT });
+    return prisma.message.findUnique({ where: { senderId_clientId: { senderId, clientId } }, select: messageSelect(senderId) });
   },
 
-  findById(id: string) {
-    return prisma.message.findUnique({ where: { id }, select: { id: true, senderId: true, conversationId: true, deletedAt: true } });
+  /** A message, but only if `userId` is a participant of its conversation (the access check for react/edit/delete). */
+  findForParticipant(id: string, userId: string) {
+    return prisma.message.findFirst({
+      where: { id, conversation: { participants: { some: { userId } } } },
+      select: { id: true, senderId: true, conversationId: true, deletedAt: true },
+    });
+  },
+
+  /** Does `id` belong to this conversation? (a reply can only point inside its own conversation) */
+  inConversation(id: string, conversationId: string) {
+    return prisma.message.findFirst({ where: { id, conversationId }, select: { id: true } });
   },
 
   /** Saves the message and bumps the conversation's activity time in ONE transaction. */
-  create(data: { conversationId: string; senderId: string; content: string; clientId?: string }): Promise<MessageRecord> {
+  create(data: { conversationId: string; senderId: string; content: string; clientId?: string; replyToId?: string }): Promise<MessageRecord> {
     return prisma.$transaction(async (tx) => {
-      const message = await tx.message.create({ data, select: MESSAGE_SELECT });
+      const message = await tx.message.create({ data, select: messageSelect(data.senderId) });
       await tx.conversation.update({ where: { id: data.conversationId }, data: { lastMessageAt: message.createdAt }, select: { id: true } });
       return message;
     });
   },
 
-  /**
-   * One page of messages, newest first (the service reverses it for display).
-   * `before` must be a message of THIS conversation; the lookup is scoped by conversationId so ids from other chats are useless.
-   */
-  async page(conversationId: string, take: number, before?: string): Promise<{ rows: MessageRecord[]; hasMore: boolean } | null> {
+  byId(id: string, viewerId: string) {
+    return prisma.message.findUnique({ where: { id }, select: messageSelect(viewerId) });
+  },
+
+  /** One page, newest first (the service reverses it). Messages the viewer deleted "for me" never appear. */
+  async page(conversationId: string, viewerId: string, take: number, before?: string): Promise<{ rows: MessageRecord[]; hasMore: boolean } | null> {
     let cursorWhere: Prisma.MessageWhereInput = {};
     if (before) {
       const anchor = await prisma.message.findFirst({ where: { id: before, conversationId }, select: { id: true, createdAt: true } });
@@ -113,25 +127,45 @@ export const messageRepository = {
       cursorWhere = { OR: [{ createdAt: { lt: anchor.createdAt } }, { createdAt: anchor.createdAt, id: { lt: anchor.id } }] };
     }
     const rows = await prisma.message.findMany({
-      where: { conversationId, ...cursorWhere },
+      where: { conversationId, ...notHiddenFor(viewerId), ...cursorWhere },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       take: take + 1,
-      select: MESSAGE_SELECT,
+      select: messageSelect(viewerId),
     });
     const hasMore = rows.length > take;
     return { rows: hasMore ? rows.slice(0, take) : rows, hasMore };
   },
 
-  /** Marks everything the OTHER person sent as read. Your own messages are never touched. */
   async markRead(conversationId: string, readerId: string): Promise<number> {
     const result = await prisma.message.updateMany({ where: { conversationId, senderId: { not: readerId }, readAt: null }, data: { readAt: new Date() } });
     return result.count;
   },
 
-  /** senderId in the filter means nobody can delete someone else's message. Content is blanked, the row stays. */
-  async softDelete(id: string, senderId: string): Promise<boolean> {
-    const result = await prisma.message.updateMany({ where: { id, senderId, deletedAt: null }, data: { deletedAt: new Date(), content: "" } });
-    return result.count === 1;
+  /** senderId in the WHERE = nobody can edit someone else's message. Deleted messages can't be edited. */
+  async edit(id: string, senderId: string, content: string): Promise<boolean> {
+    const r = await prisma.message.updateMany({ where: { id, senderId, deletedAt: null }, data: { content, editedAt: new Date() } });
+    return r.count === 1;
+  },
+
+  /** "Delete for everyone": content erased, reactions removed, the placeholder stays so the timeline keeps its shape. */
+  async deleteForEveryone(id: string, senderId: string): Promise<boolean> {
+    return prisma.$transaction(async (tx) => {
+      const r = await tx.message.updateMany({ where: { id, senderId, deletedAt: null }, data: { deletedAt: new Date(), content: "" } });
+      if (r.count === 1) await tx.messageReaction.deleteMany({ where: { messageId: id } });
+      return r.count === 1;
+    });
+  },
+
+  /** "Delete for me": hide it for this one person. The other participant is unaffected. */
+  async hideForUser(messageId: string, userId: string): Promise<void> {
+    await prisma.messageHidden.createMany({ data: [{ messageId, userId }], skipDuplicates: true });
+  },
+
+  setReaction(messageId: string, userId: string, type: ReactionType) {
+    return prisma.messageReaction.upsert({ where: { messageId_userId: { messageId, userId } }, create: { messageId, userId, type }, update: { type } });
+  },
+  removeReaction(messageId: string, userId: string) {
+    return prisma.messageReaction.deleteMany({ where: { messageId, userId } });
   },
 
   /** Unread messages across all of the user's conversations, ignoring blocked people. */

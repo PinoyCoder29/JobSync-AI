@@ -8,7 +8,9 @@ import { requireUserId } from "@/lib/session";
 import { userIdSchema } from "@/lib/validations/network";
 import { PostCard } from "@/components/social/PostCard";
 import { networkingService } from "@/services/networking.service";
+import { presenceLabel } from "@/lib/presence";
 import { feedService } from "@/services/social/feed.service";
+import { presenceService } from "@/services/presence.service";
 
 export const metadata: Metadata = { title: "Profile" };
 
@@ -40,6 +42,10 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
     .then((p) => p.items)
     .catch((e) => { console.error("Profile posts failed", e); return null; });
 
+  // Online status: only on a profile you may fully see, only if BOTH people share status (privacy switch), coarse wording.
+  const presence = await presenceService.forViewer(viewerId, [view.id]).then((m) => m.get(view.id)).catch(() => undefined);
+  const presenceText = presence ? presenceLabel(presence, "coarse") : null;
+
   const links = [
     { label: "Portfolio", icon: "bi-globe2", href: safeHttpUrl(view.links.portfolio) },
     { label: "GitHub", icon: "bi-github", href: safeHttpUrl(view.links.github) },
@@ -53,6 +59,7 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
         <div className="profile-avatar"><Avatar name={view.name} src={view.avatarUrl} size={112} /></div>
         <div className="flex-grow-1 profile-head-text">
           <h1 className="h3 mb-0 text-break">{view.name}</h1>
+          {presenceText && <p className="profile-presence mb-1"><span className={`presence-dot ${presence?.online ? "online" : "away"}`} aria-hidden="true" />{presenceText}</p>}
           {view.headline && <p className="mb-1 text-break">{view.headline}</p>}
           <p className="text-muted small mb-2">
             {view.location && <><i className="bi bi-geo-alt me-1" aria-hidden="true" />{view.location} · </>}

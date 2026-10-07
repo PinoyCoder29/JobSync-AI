@@ -38,6 +38,7 @@ export const settingsSchema = z.object({
   notifyComments: z.boolean().default(true),
   notifyConnections: z.boolean().default(true),
   notifyMessages: z.boolean().default(true),
+  showOnlineStatus: z.boolean().default(true),
   profileVisible: z.boolean(),
   visibility: z.enum(["PUBLIC", "CONNECTIONS_ONLY", "PRIVATE"]).default("PUBLIC"),
 });

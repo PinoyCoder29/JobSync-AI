@@ -25,17 +25,32 @@ export default async function InterviewPage({ searchParams }: { searchParams: Pr
   return (
     <div>
       <h1 className="page-title">Interview preparation</h1>
-      <p className="text-muted mb-4">Practice with a question set, write your answer and get feedback. Feedback comes from a demo scorer (keywords and length), not a real interviewer.</p>
+      <Link href="/interview/live" className="live-promo mb-4">
+        <span className="live-promo-icon"><i className="bi bi-mic-fill" aria-hidden="true" /></span>
+        <span className="min-w-0"><strong className="d-block">Try the AI Interviewer</strong><span className="small text-muted">It speaks to you, listens to your answers, asks follow-up questions and gives you a full report.</span></span>
+        <i className="bi bi-arrow-right ms-auto" aria-hidden="true" />
+      </Link>
+      <p className="text-muted mb-4">Classic practice: a fixed question set, written answers and keyword-based demo feedback.</p>
       <div className="row g-4">
         <aside className="col-lg-4">
           <div className="side-panel mb-4">
             <h2 className="sub-title">New practice session</h2>
             <StartInterviewForm defaultRole={profile.profile?.targetRoles[0] ?? "Junior Full Stack Developer"} />
           </div>
-          <h2 className="sub-title">Past sessions</h2>
-          {sessions.length === 0 ? <p className="text-muted small">Your sessions will appear here.</p> : (
+          {sessions.some((s) => s.mode === "LIVE") && (
+            <>
+              <h2 className="sub-title">AI interviews</h2>
+              <ul className="session-list mb-4">
+                {sessions.filter((s) => s.mode === "LIVE").slice(0, 6).map((s) => (
+                  <li key={s.id}><Link href={`/interview/live/${s.id}`}><strong>{s.focus ?? CATEGORY_LABEL[s.category]}</strong> · {s.jobRole}<span className="d-block small text-muted">{formatDate(s.createdAt)}{s.status === "IN_PROGRESS" ? " · in progress" : s.score !== null ? ` · score ${s.score}` : ""}</span></Link></li>
+                ))}
+              </ul>
+            </>
+          )}
+          <h2 className="sub-title">Past practice sessions</h2>
+          {sessions.filter((s) => s.mode === "CLASSIC").length === 0 ? <p className="text-muted small">Your sessions will appear here.</p> : (
             <ul className="session-list">
-              {sessions.map((s) => {
+              {sessions.filter((s) => s.mode === "CLASSIC").map((s) => {
                 const done = s.questions.filter((q) => q.answer).length;
                 return (
                   <li key={s.id} className={s.id === sessionId ? "active" : ""}>

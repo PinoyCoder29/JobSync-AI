@@ -14,13 +14,24 @@ type GeminiResponse = {
  * Asks Gemini for JSON and returns the parsed (still unvalidated) value.
  */
 export async function generateJson(systemInstruction: string, userContent: string): Promise<{ json: unknown; model: string }> {
+  return generateJsonTurns(systemInstruction, [{ role: "user", text: userContent }]);
+}
+
+export type GeminiTurn = { role: "user" | "model"; text: string };
+
+/** Same as generateJson but for a multi-turn conversation (assistant chat, AI interviewer). Still server-side only. */
+export async function generateJsonTurns(
+  systemInstruction: string,
+  turns: GeminiTurn[],
+  opts: { temperature?: number; maxOutputTokens?: number } = {},
+): Promise<{ json: unknown; model: string }> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new AppError("AI analysis isn't set up on this server yet (GEMINI_API_KEY is missing).");
 
   const body = JSON.stringify({
     systemInstruction: { parts: [{ text: systemInstruction }] },
-    contents: [{ role: "user", parts: [{ text: userContent }] }],
-    generationConfig: { responseMimeType: "application/json", temperature: 0.2, maxOutputTokens: 16000 },
+    contents: turns.map((t) => ({ role: t.role, parts: [{ text: t.text }] })),
+    generationConfig: { responseMimeType: "application/json", temperature: opts.temperature ?? 0.2, maxOutputTokens: opts.maxOutputTokens ?? 16000 },
   });
 
   let lastStatus = 0;

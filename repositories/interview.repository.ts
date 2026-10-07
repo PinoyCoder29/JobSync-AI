@@ -43,4 +43,22 @@ export const interviewRepository = {
       }
     });
   },
+
+  // ───────── LIVE (AI interviewer) sessions ─────────
+  createLive(userId: string, data: { category: InterviewCategory; jobRole: string; difficulty: Difficulty; focus: string; jobId?: string; jobDescription?: string; maxQuestions: number }, first: NewQuestion) {
+    return prisma.interviewSession.create({
+      data: { userId, mode: "LIVE", ...data, questions: { create: [{ ...first, sortOrder: 0 }] } },
+      select: { id: true, questions: { select: { id: true } } },
+    });
+  },
+  appendQuestion(sessionId: string, q: NewQuestion & { isFollowUp: boolean }, sortOrder: number) {
+    return prisma.interviewQuestion.create({ data: { sessionId, sortOrder, ...q }, select: { id: true } });
+  },
+  /** The unique questionId makes a double-submit fail instead of saving two answers. */
+  saveLiveAnswer(questionId: string, answer: string, score: number, feedback: string, details: object) {
+    return prisma.interviewAnswer.create({ data: { questionId, answer, score, feedback, details }, select: { id: true } });
+  },
+  completeLive(sessionId: string, score: number | null, report: object | null) {
+    return prisma.interviewSession.update({ where: { id: sessionId }, data: { status: "COMPLETED", score, report: report ?? undefined, completedAt: new Date() }, select: { id: true } });
+  },
 };

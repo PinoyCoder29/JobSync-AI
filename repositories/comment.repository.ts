@@ -15,6 +15,7 @@ export function commentSelect(viewerId: string | null) {
     parentId: true,
     content: true,
     createdAt: true,
+    editedAt: true,
     authorId: true,
     author: { select: AUTHOR_SELECT },
     _count: { select: { reactions: true, replies: true } },
@@ -57,6 +58,12 @@ export const commentRepository = {
 
   create(data: { postId: string; authorId: string; content: string; parentId?: string }, viewerId: string) {
     return prisma.comment.create({ data, select: commentSelect(viewerId) });
+  },
+
+  /** The WHERE includes authorId, so even a bug upstream cannot let someone edit another person's comment. */
+  async edit(id: string, authorId: string, content: string, viewerId: string) {
+    const r = await prisma.comment.updateMany({ where: { id, authorId }, data: { content, editedAt: new Date() } });
+    return r.count === 1 ? prisma.comment.findUnique({ where: { id }, select: commentSelect(viewerId) }) : null;
   },
 
   /** Removing a top-level comment removes its replies too (cascade). */

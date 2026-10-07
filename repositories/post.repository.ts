@@ -254,6 +254,21 @@ export const postRepository = {
 
   // ───────── discovery helpers ─────────
   /** Authors the viewer follows, among a set of candidate authors. */
+  /** People who reacted to a post, newest first, optionally one reaction type. Blocked people are excluded in SQL. */
+  async listReactors(input: { postId: string; hiddenIds: string[]; type?: ReactionType; cursor?: string; take: number }) {
+    const { postId, hiddenIds, type, cursor, take } = input;
+    const rows = await prisma.postReaction.findMany({
+      where: { postId, userId: { notIn: hiddenIds }, ...(type ? { type } : {}) },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: take + 1,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      select: { id: true, type: true, user: { select: AUTHOR_SELECT } },
+    });
+    const hasMore = rows.length > take;
+    const items = hasMore ? rows.slice(0, take) : rows;
+    return { items, hasMore, nextCursor: hasMore ? items[items.length - 1].id : null };
+  },
+
   async followedAmong(viewerId: string, authorIds: string[]): Promise<Set<string>> {
     if (authorIds.length === 0) return new Set();
     const rows = await prisma.follow.findMany({ where: { followerId: viewerId, targetType: "USER", targetId: { in: authorIds } }, select: { targetId: true } });

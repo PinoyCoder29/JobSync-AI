@@ -7,11 +7,7 @@ import { MESSAGE_MAX_LENGTH } from "@/lib/messaging/constants";
  * Auto-growing message box. Desktop: Enter sends, Shift+Enter adds a line.
  * Touch devices: Enter adds a line (people expect that on a phone keyboard) and the Send button sends.
  */
-export function MessageComposer({
-  onSend,
-}: {
-  onSend: (text: string) => void;
-}) {
+export function MessageComposer({ onSend, replyingTo, onCancelReply }: { onSend: (text: string) => void; replyingTo?: { name: string; text: string } | null; onCancelReply?: () => void }) {
   const inputId = useId();
   const ref = useRef<HTMLTextAreaElement>(null);
   const [value, setValue] = useState("");
@@ -42,18 +38,16 @@ export function MessageComposer({
 
   return (
     <div className="chat-composer">
-      {nearLimit && (
-        <p
-          className={`chat-count small mb-1 ${tooLong ? "text-danger" : "text-muted"}`}
-          role="status"
-        >
-          {value.length}/{MESSAGE_MAX_LENGTH}
-        </p>
+      {replyingTo && (
+        <div className="chat-replybar">
+          <i className="bi bi-reply-fill" aria-hidden="true" />
+          <span className="min-w-0"><strong className="d-block small">Replying to {replyingTo.name}</strong><span className="d-block small text-muted text-truncate">{replyingTo.text}</span></span>
+          <button type="button" className="icon-btn ms-auto" aria-label="Cancel reply" onClick={onCancelReply}><i className="bi bi-x-lg" aria-hidden="true" /></button>
+        </div>
       )}
+      {nearLimit && <p className={`chat-count small mb-1 ${tooLong ? "text-danger" : "text-muted"}`} role="status">{value.length}/{MESSAGE_MAX_LENGTH}</p>}
       <div className="chat-composer-row">
-        <label htmlFor={inputId} className="visually-hidden">
-          Message
-        </label>
+        <label htmlFor={inputId} className="visually-hidden">Message</label>
         <textarea
           id={inputId}
           ref={ref}
@@ -66,13 +60,7 @@ export function MessageComposer({
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={onKeyDown}
         />
-        <button
-          type="button"
-          className="btn btn-brand chat-send"
-          onClick={submit}
-          disabled={!trimmed || tooLong}
-          aria-label="Send message"
-        >
+        <button type="button" className="btn btn-brand chat-send" onClick={submit} disabled={!trimmed || tooLong} aria-label="Send message">
           <i className="bi bi-send-fill" aria-hidden="true" />
         </button>
       </div>

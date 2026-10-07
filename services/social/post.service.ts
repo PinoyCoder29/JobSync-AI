@@ -7,7 +7,7 @@ import { connectionRepository, blockRepository } from "@/repositories/networking
 import { postRepository, type PostRecord } from "@/repositories/post.repository";
 import { mediaService } from "@/services/media/media.service";
 import { getJobProvider } from "@/services/job-provider.service";
-import { toPostDTO, type RelationshipLookup } from "./mappers";
+import { toAuthor, toPostDTO, type RelationshipLookup } from "./mappers";
 import { notificationService } from "./notification.service";
 import type { PostDTO, Relationship } from "./types";
 
@@ -113,6 +113,27 @@ export const postService = {
   },
 
   // ───────── reactions ─────────
+
+  /**
+   * "People who reacted": anyone who may VIEW the post may see who reacted to it (same rule as the post itself).
+   * Names/avatars/headlines go through toAuthor(), so private profiles show only a name.
+   */
+  async listReactors(viewerId: string | null, postId: string, opts: { type?: ReactionType; cursor?: string }) {
+    await requireViewablePost(viewerId, postId);
+    const hiddenIds = viewerId ? [...(await blockRepository.hiddenUserIds(viewerId))] : [];
+    const page = await postRepository.listReactors({ postId, hiddenIds, type: opts.type, cursor: opts.cursor, take: 20 });
+    const ids = page.items.map((r) => r.user.id);
+    const [connected, following] = await Promise.all([
+      viewerId ? postRepository.connectedAmong(viewerId, ids) : Promise.resolve(new Set<string>()),
+      viewerId ? postRepository.followedAmong(viewerId, ids) : Promise.resolve(new Set<string>()),
+    ]);
+    const rel = (id: string): Relationship => (id === viewerId ? "self" : connected.has(id) ? "connection" : following.has(id) ? "following" : "none");
+    return {
+      items: page.items.map((r) => ({ id: r.id, type: r.type, person: toAuthor(r.user, rel(r.user.id)) })),
+      hasMore: page.hasMore,
+      nextCursor: page.nextCursor,
+    };
+  },
 
   async react(userId: string, postId: string, type: ReactionType) {
     const post = await requireViewablePost(userId, postId);

@@ -1,5 +1,11 @@
 /** Plain JSON data, safe to send from server to client components and API responses. No server imports here. */
 
+import type { ReactionType } from "@prisma/client";
+import type { PresenceDTO } from "@/lib/presence";
+
+export type MessageReactionDTO = { type: ReactionType; count: number; mine: boolean };
+export type MessageReplyDTO = { id: string; preview: string; mine: boolean; deleted: boolean };
+
 export type MessageDTO = {
   id: string;
   conversationId: string;
@@ -9,6 +15,10 @@ export type MessageDTO = {
   /** Empty when the message was deleted. */
   content: string;
   createdAt: string;
+  /** Set when the sender edited the text (UI shows "Edited"). */
+  editedAt: string | null;
+  replyTo: MessageReplyDTO | null;
+  reactions: MessageReactionDTO[];
   /** When the recipient opened it. Only meaningful on messages you sent. */
   readAt: string | null;
   deleted: boolean;
@@ -21,6 +31,8 @@ export type ConversationPersonDTO = {
   name: string;
   headline: string | null;
   avatarUrl: string | null;
+  /** Already filtered by privacy: `visible:false` means "don't show anything". */
+  presence: PresenceDTO;
 };
 
 export type ConversationSummaryDTO = {

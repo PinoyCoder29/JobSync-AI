@@ -35,6 +35,7 @@ export async function updateSettingsAction(_prev: ActionState, formData: FormDat
     notifyComments: on("notifyComments"),
     notifyConnections: on("notifyConnections"),
     notifyMessages: on("notifyMessages"),
+    showOnlineStatus: on("showOnlineStatus"),
     profileVisible: on("profileVisible"),
     visibility: formData.get("visibility") ?? "PUBLIC",
   });

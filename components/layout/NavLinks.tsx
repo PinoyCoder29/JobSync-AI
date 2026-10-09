@@ -13,7 +13,7 @@ export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
         {NAV_ITEMS.map((item) => {
           const active = isActivePath(pathname, item.href);
           return (
-            <li key={item.href}>
+            <li key={item.href}>  
               <Link
                 href={item.href}
                 className={`nav-link-js ${active ? "active" : ""}`}

@@ -4,7 +4,7 @@
 ```bash
 npm install
 npx prisma validate
-npx prisma db push      # additive only: new tables/enums/indexes, no data is dropped
+npx prisma db push
 npx prisma generate
 npm test
 npm run dev
